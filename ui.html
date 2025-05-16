@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Variable Exporter and Counter</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px;
+      margin: 0;
+      color: #333;
+    }
+    h1 {
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+    h2 {
+      font-size: 16px;
+      margin-top: 15px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+    }
+    button { 
+      padding: 8px 16px; 
+      margin-top: 15px;
+      background: #18A0FB;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    button:hover {
+      background: #0D8CE0;
+    }
+    .meta {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 15px;
+    }
+    #variables-preview {
+      margin-top: 15px;
+      max-height: 350px;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 10px;
+    }
+    .variable-group {
+      margin-bottom: 15px;
+    }
+    .variable-item {
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f5f5f5;
+      font-size: 13px;
+    }
+    .color-preview {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 1px solid #ddd;
+      vertical-align: middle;
+      margin-right: 5px;
+      border-radius: 3px;
+    }
+    .format-options {
+      margin-top: 15px;
+      padding: 10px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      background: #f9f9f9;
+    }
+    select {
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    .tab-controls {
+      display: flex;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 10px;
+    }
+    .tab {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.active {
+      border-bottom: 2px solid #18A0FB;
+      font-weight: 500;
+    }
+    .type-count {
+      color: #999;
+      font-size: 12px;
+      margin-left: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Variable Exporter</h1>
+  <div class="meta">
+    <div>File: <span id="file-name">Loading...</span></div>
+    <div>Total variables: <span id="count">0</span></div>
+  </div>
+  
+  <div class="tab-controls">
+    <div class="tab active" data-tab="preview">Preview</div>
+    <div class="tab" data-tab="settings">Export Settings</div>
+  </div>
+  
+  <div id="preview-tab" class="tab-content">
+    <div id="variables-preview">Loading variables...</div>
+  </div>
+  
+  <div id="settings-tab" class="tab-content" style="display:none">
+    <div class="format-options">
+      <h2>Export Format</h2>
+      <div>
+        <label for="indentation">Indentation:</label>
+        <select id="indentation">
+          <option value="2">2 spaces</option>
+          <option value="4">4 spaces</option>
+          <option value="tab">Tab</option>
+        </select>
+      </div>
+      <div>
+        <label for="format-type">Format Type:</label>
+        <select id="format-type">
+          <option value="organized">Organized by Type</option>
+          <option value="flat">Flat List</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  
+  <button id="export">Export Variables</button>
+
+  <script>
+    // State variables
+    let exportData = null;
+    let selectedIndentation = 2;
+    let selectedFormat = 'organized';
+    
+    // Handle tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        const tabId = tab.getAttribute('data-tab');
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.style.display = 'none';
+        });
+        document.getElementById(tabId + '-tab').style.display = 'block';
+      });
+    });
+    
+    // Handle format options
+    document.getElementById('indentation').addEventListener('change', function() {
+      selectedIndentation = this.value === 'tab' ? '\t' : parseInt(this.value);
+    });
+    
+    document.getElementById('format-type').addEventListener('change', function() {
+      selectedFormat = this.value;
+    });
+    
+    // Function to render preview
+    function renderPreview(data) {
+      const previewEl = document.getElementById('variables-preview');
+      previewEl.innerHTML = '';
+      
+      if (!data) {
+        previewEl.textContent = 'No variables found';
+        return;
+      }
+      
+      const { variablesByType } = data;
+      
+      if (Object.keys(variablesByType).length === 0) {
+        previewEl.textContent = 'No variables found';
+        return;
+      }
+      
+      // Render each variable type group
+      Object.entries(variablesByType).forEach(([type, typeData]) => {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'variable-group';
+        
+        const groupTitle = document.createElement('h2');
+        groupTitle.textContent = type;
+        groupTitle.innerHTML += ` <span class="type-count">(${typeData.count})</span>`;
+        groupEl.appendChild(groupTitle);
+        
+        // Render variables for this type
+        typeData.variables.forEach(variable => {
+          const itemEl = document.createElement('div');
+          itemEl.className = 'variable-item';
+          
+          // Create special preview for color variables
+          if (type === 'COLOR' && variable.value && variable.value.hex) {
+            const colorPreview = document.createElement('span');
+            colorPreview.className = 'color-preview';
+            colorPreview.style.backgroundColor = variable.value.hex;
+            itemEl.appendChild(colorPreview);
+          }
+          
+          // Variable name
+          const nameEl = document.createElement('strong');
+          nameEl.textContent = variable.name;
+          itemEl.appendChild(nameEl);
+          
+          // Value display
+          let valueText = '';
+          if (type === 'COLOR' && variable.value && variable.value.hex) {
+            valueText = `: ${variable.value.hex}`;
+          } else if (typeof variable.value === 'number') {
+            valueText = `: ${variable.value}`;
+          } else if (typeof variable.value === 'string') {
+            valueText = `: "${variable.value}"`;
+          }
+          
+          if (valueText) {
+            itemEl.appendChild(document.createTextNode(valueText));
+          }
+          
+          groupEl.appendChild(itemEl);
+        });
+        
+        previewEl.appendChild(groupEl);
+      });
+    }
+    
+    // Function to prepare export data based on selected format
+    function prepareExportData() {
+      if (!exportData) return null;
+      
+      if (selectedFormat === 'organized') {
+        return exportData;
+      } else {
+        // Create flat list format
+        const flatList = [];
+        Object.entries(exportData.variablesByType).forEach(([type, typeData]) => {
+          typeData.variables.forEach(variable => {
+            flatList.push(variable);
+          });
+        });
+        
+        return {
+          metadata: exportData.metadata,
+          variables: flatList
+        };
+      }
+    }
+    
+    // Listen for messages from code.ts
+    window.onmessage = (event) => {
+      const { count, exportData: data } = event.data.pluginMessage;
+      
+      // Store data for later use
+      exportData = data;
+      
+      // Update UI elements
+      document.getElementById('count').textContent = count;
+      document.getElementById('file-name').textContent = data.metadata.fileName;
+      
+      // Render the preview
+      renderPreview(data);
+      
+      // Handle export button click
+      document.getElementById('export').onclick = () => {
+        const dataToExport = prepareExportData();
+        if (!dataToExport) return;
+        
+        // Determine indentation
+        let indent = selectedIndentation;
+        if (typeof indent === 'number') {
+          indent = ' '.repeat(indent);
+        }
+        
+        const json = JSON.stringify(dataToExport, null, indent);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${data.metadata.fileName.replace(/\s+/g, '-')}-variables.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+    };
+  </script>
+</body>
+</html>
