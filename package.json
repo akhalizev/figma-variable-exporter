@@ -1,6 +1,6 @@
 {
   "name": "figma-variable-exporter",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Figma plugin for exporting design variables with enhanced organization, formatting, and visualization options",
   "main": "code.js",
   "scripts": {
