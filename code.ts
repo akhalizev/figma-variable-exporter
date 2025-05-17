@@ -146,6 +146,138 @@ async function getVariables(): Promise<void> {
   figma.ui.postMessage({ count, exportData: organizedExport } as UIMessage);
 }
 
+/**
+ * Creates a visual style guide frame in Figma based on the exported variables.
+ */
+async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void> {
+  try {
+    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+    await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+
+    const PADDING = 40;
+    const ITEM_SPACING = 20;
+    const SECTION_SPACING = 60;
+    const COLOR_SWATCH_SIZE = 80;
+    const TEXT_NODE_HEIGHT = 20;
+
+    const parentFrame = figma.createFrame();
+    parentFrame.name = "Variable Style Guide - " + exportData.metadata.fileName;
+    parentFrame.layoutMode = "VERTICAL";
+    parentFrame.paddingTop = PADDING;
+    parentFrame.paddingRight = PADDING;
+    parentFrame.paddingBottom = PADDING;
+    parentFrame.paddingLeft = PADDING;
+    parentFrame.itemSpacing = SECTION_SPACING;
+    parentFrame.primaryAxisSizingMode = "AUTO";
+    parentFrame.counterAxisSizingMode = "AUTO";
+
+    const title = figma.createText();
+    title.fontName = { family: "Inter", style: "Bold" };
+    title.fontSize = 24;
+    title.characters = `Variable Style Guide: ${exportData.metadata.fileName}`;
+    parentFrame.appendChild(title);
+
+    for (const type in exportData.variablesByType) {
+      const typeData = exportData.variablesByType[type];
+      if (typeData.variables.length === 0) continue;
+
+      const sectionFrame = figma.createFrame();
+      sectionFrame.name = type + " Variables";
+      sectionFrame.layoutMode = "VERTICAL";
+      sectionFrame.itemSpacing = ITEM_SPACING * 2;
+      sectionFrame.primaryAxisSizingMode = "AUTO";
+      sectionFrame.counterAxisSizingMode = "AUTO";
+      parentFrame.appendChild(sectionFrame);
+
+      const sectionTitle = figma.createText();
+      sectionTitle.fontName = { family: "Inter", style: "Bold" };
+      sectionTitle.fontSize = 18;
+      sectionTitle.characters = type;
+      sectionFrame.appendChild(sectionTitle);
+
+      const itemsGridFrame = figma.createFrame();
+      itemsGridFrame.name = type + " Items";
+      itemsGridFrame.layoutMode = "HORIZONTAL"; // Use HORIZONTAL for a wrapping grid-like layout
+      itemsGridFrame.itemSpacing = ITEM_SPACING;
+      itemsGridFrame.primaryAxisSizingMode = "AUTO"; // Let it grow with content
+      itemsGridFrame.counterAxisSizingMode = "AUTO";
+      itemsGridFrame.layoutWrap = "WRAP"; // Enable wrapping
+      itemsGridFrame.counterAxisAlignItems = 'MIN';
+      sectionFrame.appendChild(itemsGridFrame);
+
+      for (const variable of typeData.variables) {
+        const itemFrame = figma.createFrame();
+        itemFrame.name = variable.name;
+        itemFrame.layoutMode = "VERTICAL";
+        itemFrame.itemSpacing = ITEM_SPACING / 2;
+        itemFrame.primaryAxisSizingMode = "AUTO";
+        itemFrame.counterAxisSizingMode = "AUTO";
+        // Set a min-width for items if desired, e.g., for better wrapping behavior
+        itemFrame.resize(COLOR_SWATCH_SIZE * 2, itemFrame.height); 
+        itemsGridFrame.appendChild(itemFrame);
+
+        if (variable.type === "COLOR" && variable.value && variable.value.rgb) {
+          const colorSwatch = figma.createRectangle();
+          colorSwatch.name = "Color Swatch";
+          colorSwatch.resize(COLOR_SWATCH_SIZE, COLOR_SWATCH_SIZE);
+          const { r, g, b, a } = variable.value.rgb;
+          colorSwatch.fills = [{ type: "SOLID", color: { r, g, b }, opacity: a !== undefined ? a : 1 }];
+          colorSwatch.cornerRadius = 4;
+          itemFrame.appendChild(colorSwatch);
+
+          const nameText = figma.createText();
+          nameText.fontName = { family: "Inter", style: "Regular" };
+          nameText.fontSize = 12;
+          nameText.characters = variable.name;
+          nameText.layoutAlign = "STRETCH";
+          itemFrame.appendChild(nameText);
+
+          const hexText = figma.createText();
+          hexText.fontName = { family: "Inter", style: "Regular" };
+          hexText.fontSize = 10;
+          hexText.characters = variable.value.hex || "";
+          hexText.layoutAlign = "STRETCH";
+          itemFrame.appendChild(hexText);
+        } else {
+          // Handle other types (FLOAT, STRING, BOOLEAN)
+          const nameText = figma.createText();
+          nameText.fontName = { family: "Inter", style: "Regular" };
+          nameText.fontSize = 12;
+          nameText.characters = variable.name;
+          nameText.layoutAlign = "STRETCH";
+          itemFrame.appendChild(nameText);
+
+          const valueText = figma.createText();
+          valueText.fontName = { family: "Inter", style: "Regular" };
+          valueText.fontSize = 10;
+          valueText.characters = String(variable.value);
+          valueText.layoutAlign = "STRETCH";
+          itemFrame.appendChild(valueText);
+        }
+      }
+    }
+
+    figma.currentPage.appendChild(parentFrame);
+    figma.viewport.scrollAndZoomIntoView([parentFrame]);
+
+    figma.ui.postMessage({ type: 'style-guide-created' });
+  } catch (error) {
+    console.error("Error creating style guide:", error);
+    figma.ui.postMessage({ type: 'error', error: 'Failed to create style guide: ' + String(error) });
+  }
+}
+
 // Show the UI and run the plugin
 figma.showUI(__html__, { width: 450, height: 550 });
 getVariables();
+
+// Listen for messages from the UI
+figma.ui.onmessage = async (msg) => {
+  if (msg.type === 'create-style-guide') {
+    if (msg.data) {
+      await createStyleGuideFrame(msg.data as OrganizedExport);
+    } else {
+      figma.ui.postMessage({ type: 'error', error: 'No data received for style guide creation.' });
+    }
+  }
+};

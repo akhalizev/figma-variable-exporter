@@ -136,6 +136,7 @@
   </div>
   
   <button id="export">Export Variables</button>
+  <button id="create-style-guide" style="background-color: #4CAF50; margin-left: 10px;">Create Style Guide Frame</button>
 
   <script>
     // State variables
@@ -256,7 +257,19 @@
     
     // Listen for messages from code.ts
     window.onmessage = (event) => {
-      const { count, exportData: data } = event.data.pluginMessage;
+      const { type, count, exportData: data, error } = event.data.pluginMessage;
+
+      if (error) {
+        console.error("Figma plugin error:", error);
+        // Optionally display the error in the UI
+        alert("Error: " + error);
+        return;
+      }
+      
+      if (type === 'style-guide-created') {
+        alert('Style guide frame created successfully!');
+        return;
+      }
       
       // Store data for later use
       exportData = data;
@@ -287,6 +300,11 @@
         a.download = `${data.metadata.fileName.replace(/\s+/g, '-')}-variables.json`;
         a.click();
         URL.revokeObjectURL(url);
+      };
+
+      // Handle create style guide button click
+      document.getElementById('create-style-guide').onclick = () => {
+        parent.postMessage({ pluginMessage: { type: 'create-style-guide', data: exportData } }, '*');
       };
     };
   </script>
