@@ -96,75 +96,229 @@
       font-size: 12px;
       margin-left: 5px;
     }
+    
+    /* Export section styles */
+    .export-section {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #e1e5e9;
+        border-radius: 6px;
+        background: #f8f9fa;
+    }
+    
+    .export-section h3 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e1e1e;
+    }
+    
+    .export-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .input-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .input-group input[type="text"], .input-group input[type="number"] {
+        flex: 1;
+        padding: 4px 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+    
+    .export-buttons {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .export-buttons button {
+        flex: 1;
+    }
+    
+    .tabs {
+        display: flex;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 20px;
+    }
+    
+    .tab-button {
+        background: none;
+        border: none;
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin: 0;
+        margin-top: 0;
+    }
+    
+    .tab-button.active {
+        border-bottom-color: #18A0FB;
+        color: #18A0FB;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
   </style>
 </head>
 <body>
-  <h1>Variable Exporter</h1>
-  <div class="meta">
-    <div>File: <span id="file-name">Loading...</span></div>
-    <div>Total variables: <span id="count">0</span></div>
+  <div class="tabs">
+    <button class="tab-button active" onclick="showTab('preview')">Preview</button>
+    <button class="tab-button" onclick="showTab('export')">Export</button>
   </div>
-  
-  <div class="tab-controls">
-    <div class="tab active" data-tab="preview">Preview</div>
-    <div class="tab" data-tab="settings">Export Settings</div>
-  </div>
-  
-  <div id="preview-tab" class="tab-content">
+
+  <div id="preview-tab" class="tab-content active">
+    <h1>Variable Exporter</h1>
+    <div class="meta">
+      <div>File: <span id="file-name">Loading...</span></div>
+      <div>Total variables: <span id="count">0</span></div>
+    </div>
     <div id="variables-preview">Loading variables...</div>
   </div>
-  
-  <div id="settings-tab" class="tab-content" style="display:none">
-    <div class="format-options">
-      <h2>Export Format</h2>
-      <div>
-        <label for="indentation">Indentation:</label>
-        <select id="indentation">
-          <option value="2">2 spaces</option>
-          <option value="4">4 spaces</option>
-          <option value="tab">Tab</option>
-        </select>
+
+  <div id="export-tab" class="tab-content">
+    <div class="export-section">
+      <h3>JSON Export</h3>
+      <div class="export-options">
+        <div class="checkbox-group">
+          <input type="checkbox" id="organized-format" checked>
+          <label for="organized-format">Organized format (group by type)</label>
+        </div>
+        <div class="input-group">
+          <label for="json-indent">Indentation:</label>
+          <input type="number" id="json-indent" value="2" min="0" max="8">
+        </div>
       </div>
-      <div>
-        <label for="format-type">Format Type:</label>
-        <select id="format-type">
-          <option value="organized">Organized by Type</option>
-          <option value="flat">Flat List</option>
-        </select>
+      <button id="export-json">Export JSON</button>
+    </div>
+
+    <div class="export-section">
+      <h3>CSS Export</h3>
+      <div class="export-options">
+        <div class="checkbox-group">
+          <input type="checkbox" id="css-use-prefix">
+          <label for="css-use-prefix">Use variable prefix</label>
+        </div>
+        <div class="input-group">
+          <label for="css-prefix">Prefix:</label>
+          <input type="text" id="css-prefix" value="figma-" placeholder="e.g., figma-">
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="css-group-collections" checked>
+          <label for="css-group-collections">Group by type</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="css-remove-duplicates" checked>
+          <label for="css-remove-duplicates">Remove duplicate words (e.g., accordion-accordion → accordion)</label>
+        </div>
       </div>
+      <button id="export-css">Export CSS</button>
+    </div>
+
+    <div class="export-section">
+      <h3>Style Guide</h3>
+      <p>Create a visual style guide frame in your Figma file.</p>
+      <button id="create-style-guide">Create Style Guide</button>
     </div>
   </div>
-  
-  <button id="export">Export Variables</button>
-  <button id="create-style-guide" style="background-color: #4CAF50; margin-left: 10px;">Create Style Guide Frame</button>
+    <div class="export-options">
+      <div class="checkbox-group">
+        <input type="checkbox" id="include-comments" checked>
+        <label for="include-comments">Include Comments</label>
+      </div>
+      <div class="input-group">
+        <label for="file-name-input">File Name:</label>
+        <input type="text" id="file-name-input" placeholder="Enter file name">
+      </div>
+    </div>
+    
+    <div class="export-buttons">
+      <button id="export">Export Variables</button>
+      <button id="create-style-guide" style="background-color: #4CAF50;">Create Style Guide Frame</button>
+    </div>
+  </div>
 
   <script>
     // State variables
     let exportData = null;
-    let selectedIndentation = 2;
-    let selectedFormat = 'organized';
     
-    // Handle tab switching
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        
-        const tabId = tab.getAttribute('data-tab');
-        document.querySelectorAll('.tab-content').forEach(content => {
-          content.style.display = 'none';
-        });
-        document.getElementById(tabId + '-tab').style.display = 'block';
+    // Function to show/hide tabs
+    function showTab(tabName) {
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
       });
-    });
+      
+      // Remove active class from all tab buttons
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+      });
+      
+      // Show selected tab content
+      document.getElementById(tabName + '-tab').classList.add('active');
+      
+      // Add active class to clicked button
+      event.target.classList.add('active');
+    }
     
-    // Handle format options
-    document.getElementById('indentation').addEventListener('change', function() {
-      selectedIndentation = this.value === 'tab' ? '\t' : parseInt(this.value);
+    // Event listeners for export buttons
+    document.getElementById('export-json').addEventListener('click', () => {
+      const organized = document.getElementById('organized-format').checked;
+      const indent = parseInt(document.getElementById('json-indent').value);
+      
+      parent.postMessage({
+        pluginMessage: {
+          type: 'export-json',
+          organized: organized,
+          indent: indent
+        }
+      }, '*');
     });
-    
-    document.getElementById('format-type').addEventListener('change', function() {
-      selectedFormat = this.value;
+
+    document.getElementById('export-css').addEventListener('click', () => {
+      const usePrefix = document.getElementById('css-use-prefix').checked;
+      const prefix = document.getElementById('css-prefix').value;
+      const groupByCollection = document.getElementById('css-group-collections').checked;
+      const removeDuplicateWords = document.getElementById('css-remove-duplicates').checked;
+      
+      parent.postMessage({
+        pluginMessage: {
+          type: 'export-css',
+          options: {
+            usePrefix: usePrefix,
+            prefix: prefix,
+            groupByCollection: groupByCollection,
+            removeDuplicateWords: removeDuplicateWords
+          }
+        }
+      }, '*');
+    });
+
+    document.getElementById('create-style-guide').addEventListener('click', () => {
+      parent.postMessage({
+        pluginMessage: { 
+          type: 'create-style-guide',
+          data: exportData
+        }
+      }, '*');
     });
     
     // Function to render preview
@@ -183,6 +337,85 @@
         previewEl.textContent = 'No variables found';
         return;
       }
+      
+      // Create groups for each variable type
+      Object.keys(variablesByType).forEach(type => {
+        const typeData = variablesByType[type];
+        
+        const groupEl = document.createElement('div');
+        groupEl.className = 'variable-group';
+        
+        const titleEl = document.createElement('div');
+        titleEl.className = 'variable-group-title';
+        titleEl.textContent = `${type} (${typeData.count})`;
+        groupEl.appendChild(titleEl);
+        
+        typeData.variables.forEach(variable => {
+          const itemEl = document.createElement('div');
+          itemEl.className = 'variable-item';
+          
+          const nameEl = document.createElement('span');
+          nameEl.className = 'variable-name';
+          nameEl.textContent = variable.name;
+          itemEl.appendChild(nameEl);
+          
+          const valueEl = document.createElement('span');
+          valueEl.className = 'variable-value';
+          
+          if (type === 'COLOR' && variable.value && typeof variable.value === 'object' && variable.value.hex) {
+            // Create color swatch for color variables
+            const swatchEl = document.createElement('span');
+            swatchEl.className = 'color-swatch';
+            swatchEl.style.backgroundColor = variable.value.hex;
+            swatchEl.title = variable.value.hex;
+            valueEl.appendChild(swatchEl);
+            
+            const hexEl = document.createElement('span');
+            hexEl.textContent = variable.value.hex;
+            valueEl.appendChild(hexEl);
+          } else {
+            valueEl.textContent = JSON.stringify(variable.value);
+          }
+          
+          itemEl.appendChild(valueEl);
+          groupEl.appendChild(itemEl);
+        });
+        
+        previewEl.appendChild(groupEl);
+      });
+    }
+    
+    // Handle messages from plugin
+    window.addEventListener('message', (event) => {
+      const msg = event.data.pluginMessage;
+      
+      if (msg.type === 'variables-data') {
+        exportData = msg.data;
+        renderPreview(exportData);
+      } else if (msg.count !== undefined) {
+        exportData = msg.exportData;
+        document.getElementById('count').textContent = msg.count;
+        document.getElementById('file-name').textContent = msg.exportData.metadata.fileName;
+        renderPreview(msg.exportData);
+      } else if (msg.type === 'download-file') {
+        // Handle file downloads
+        const blob = new Blob([msg.content], { type: msg.mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = msg.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    });
+    
+    // Request initial data
+    parent.postMessage({
+      pluginMessage: { type: 'get-variables' }
+    }, '*');
+  </script>
       
       // Render each variable type group
       Object.entries(variablesByType).forEach(([type, typeData]) => {

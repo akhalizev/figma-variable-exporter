@@ -38,6 +38,13 @@ interface UIMessage {
   exportData: OrganizedExport;
 }
 
+interface CssExportOptions {
+  usePrefix: boolean;
+  prefix: string;
+  groupByCollection: boolean;
+  removeDuplicateWords: boolean;
+}
+
 /**
  * Convert RGB values (0-1 range) to hex string format
  */
@@ -86,7 +93,7 @@ function formatVariableValue(value: any, type: string): any {
   }
 }
 
-async function getVariables(): Promise<void> {
+async function getVariables(): Promise<OrganizedExport> {
   const variables: Variable[] = await figma.variables.getLocalVariablesAsync();
   const count: number = variables.length;
   
@@ -144,6 +151,9 @@ async function getVariables(): Promise<void> {
 
   // Send data to the UI
   figma.ui.postMessage({ count, exportData: organizedExport } as UIMessage);
+  
+  // Return the data for export functions
+  return organizedExport;
 }
 
 /**
@@ -186,7 +196,7 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
       sectionFrame.layoutMode = "VERTICAL";
       sectionFrame.itemSpacing = ITEM_SPACING * 2;
       sectionFrame.primaryAxisSizingMode = "AUTO";
-      sectionFrame.counterAxisSizingMode = "AUTO";
+      sectionFrame.layoutAlign = "STRETCH"; // Make sectionFrame stretch to parent width
       parentFrame.appendChild(sectionFrame);
 
       const sectionTitle = figma.createText();
@@ -200,7 +210,7 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
       itemsGridFrame.layoutMode = "HORIZONTAL"; // Use HORIZONTAL for a wrapping grid-like layout
       itemsGridFrame.itemSpacing = ITEM_SPACING;
       itemsGridFrame.primaryAxisSizingMode = "AUTO"; // Let it grow with content
-      itemsGridFrame.counterAxisSizingMode = "AUTO";
+      itemsGridFrame.layoutAlign = "STRETCH"; // Make itemsGridFrame stretch to sectionFrame width
       itemsGridFrame.layoutWrap = "WRAP"; // Enable wrapping
       itemsGridFrame.counterAxisAlignItems = 'MIN';
       sectionFrame.appendChild(itemsGridFrame);
@@ -211,9 +221,6 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
         itemFrame.layoutMode = "VERTICAL";
         itemFrame.itemSpacing = ITEM_SPACING / 2;
         itemFrame.primaryAxisSizingMode = "AUTO";
-        itemFrame.counterAxisSizingMode = "AUTO";
-        // Set a min-width for items if desired, e.g., for better wrapping behavior
-        itemFrame.resize(COLOR_SWATCH_SIZE * 2, itemFrame.height); 
         itemsGridFrame.appendChild(itemFrame);
 
         if (variable.type === "COLOR" && variable.value && variable.value.rgb) {
@@ -267,13 +274,127 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
   }
 }
 
+function generateCssVariables(data: OrganizedExport, options: CssExportOptions): string {
+  let css = '/* Figma Variables Export */\n';
+  css += '/* Generated on ' + new Date().toISOString() + ' */\n\n';
+  css += ':root {\n';
+
+  const prefix = options.usePrefix ? options.prefix : '';
+
+  if (options.groupByCollection) {
+    // Group by type (since that's how the data is organized)
+    for (const typeName in data.variablesByType) {
+      const typeData = data.variablesByType[typeName];
+      css += `  /* ${typeName} */\n`;
+      
+      typeData.variables.forEach((variable: VariableExportData) => {
+        const variableName = cleanVariableName(variable.name, prefix, options.removeDuplicateWords);
+        const value = formatCssValue(variable.value, variable.type);
+        css += `  --${variableName}: ${value};\n`;
+      });
+      
+      css += '\n';
+    }
+  } else {
+    // Flat structure - iterate through all variable types
+    for (const typeName in data.variablesByType) {
+      const typeData = data.variablesByType[typeName];
+      typeData.variables.forEach((variable: VariableExportData) => {
+        const variableName = cleanVariableName(variable.name, prefix, options.removeDuplicateWords);
+        const value = formatCssValue(variable.value, variable.type);
+        css += `  --${variableName}: ${value};\n`;
+      });
+    }
+  }
+
+  css += '}\n';
+  return css;
+}
+
+function formatCssValue(value: any, type: string): string {
+  switch (type) {
+    case 'COLOR':
+      if (typeof value === 'object' && value.hex) {
+        return value.hex;
+      }
+      return value;
+    case 'FLOAT':
+      return `${value}`;
+    case 'STRING':
+      return `"${value}"`;
+    case 'BOOLEAN':
+      return value ? 'true' : 'false';
+    default:
+      return `"${value}"`;
+  }
+}
+
+function cleanVariableName(name: string, prefix: string, removeDuplicates: boolean = true): string {
+  // Convert to lowercase and replace special characters
+  let cleanName = name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+  
+  if (removeDuplicates) {
+    // Remove duplicate words (e.g., accordion-accordion -> accordion)
+    const words = cleanName.split('-').filter(word => word.length > 0);
+    const uniqueWords = [];
+    
+    for (let i = 0; i < words.length; i++) {
+      // Skip if current word is the same as previous word
+      if (i === 0 || words[i] !== words[i - 1]) {
+        uniqueWords.push(words[i]);
+      }
+    }
+    
+    cleanName = uniqueWords.join('-');
+  }
+  
+  // Apply prefix
+  const finalName = prefix + cleanName;
+  
+  // Additional check: if prefix ends with same word that cleanName starts with, remove duplication
+  if (removeDuplicates && prefix && cleanName) {
+    const prefixWords = prefix.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase().split('-').filter(w => w.length > 0);
+    const nameWords = cleanName.split('-').filter(w => w.length > 0);
+    
+    if (prefixWords.length > 0 && nameWords.length > 0 && prefixWords[prefixWords.length - 1] === nameWords[0]) {
+      // Remove the duplicate word from the beginning of cleanName
+      nameWords.shift();
+      cleanName = nameWords.join('-');
+      return prefix + cleanName;
+    }
+  }
+  
+  return finalName;
+}
+
 // Show the UI and run the plugin
 figma.showUI(__html__, { width: 450, height: 550 });
 getVariables();
 
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
-  if (msg.type === 'create-style-guide') {
+  if (msg.type === 'get-variables') {
+    const variables = await getVariables();
+    figma.ui.postMessage({ type: 'variables-data', data: variables });
+  } else if (msg.type === 'export-json') {
+    const variables = await getVariables();
+    const jsonString = JSON.stringify(variables, null, msg.indent || 2);
+    figma.ui.postMessage({ 
+      type: 'download-file', 
+      filename: `${figma.root.name.replace(/[^a-zA-Z0-9]/g, '_')}_variables.json`,
+      content: jsonString,
+      mimeType: 'application/json'
+    });
+  } else if (msg.type === 'export-css') {
+    const variables = await getVariables();
+    const cssContent = generateCssVariables(variables, msg.options);
+    figma.ui.postMessage({ 
+      type: 'download-file', 
+      filename: `${figma.root.name.replace(/[^a-zA-Z0-9]/g, '_')}_variables.css`,
+      content: cssContent,
+      mimeType: 'text/plain'
+    });
+  } else if (msg.type === 'create-style-guide') {
     if (msg.data) {
       await createStyleGuideFrame(msg.data as OrganizedExport);
     } else {

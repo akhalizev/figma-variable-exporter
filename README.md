@@ -6,10 +6,38 @@ A powerful Figma plugin for exporting design variables with enhanced organizatio
 
 - **Organized Variable Export**: Variables are grouped by their types (COLOR, FLOAT, STRING, etc.)
 - **Enhanced Color Handling**: Includes both RGB and HEX values for color variables
-- **Customizable Export Format**: Choose between organized structure or flat list exports
+- **Multiple Export Formats**:
+  - **JSON Export**: Organized structure or flat list exports with customizable indentation
+  - **CSS Export**: Generate CSS custom properties (CSS variables) with customizable prefixes and grouping
 - **Export Metadata**: Includes file name, export date, and variable counts
 - **Visual Color Preview**: Preview color variables directly in the plugin UI
-- **Flexible JSON Formatting**: Configure indentation options for exported JSON
+- **Style Guide Generation**: Create visual style guide frames directly in Figma
+
+### CSS Export Options
+
+- **Variable Prefix**: Add custom prefixes to all CSS variables (e.g., `--figma-color-primary`)
+- **Grouping**: Group variables by type with descriptive comments
+- **Duplicate Word Removal**: Automatically removes redundant words in variable names (e.g., `accordion-accordion` → `accordion`)
+- **Proper Formatting**: Converts variable names to valid CSS format and handles different value types
+
+### Example CSS Output
+
+```css
+/* Figma Variables Export */
+/* Generated on 2025-06-18T... */
+
+:root {
+  /* COLOR */
+  --figma-color-primary: #007AFF;
+  --figma-color-secondary: #5856D6;
+  --figma-color-background: #F2F2F7;
+
+  /* FLOAT */
+  --figma-spacing-large: 24;
+  --figma-spacing-medium: 16;
+  --figma-spacing-small: 8;
+}
+```
 
 ## Installation
 
@@ -25,7 +53,7 @@ This plugin template uses Typescript and NPM, two standard tools in creating Jav
 2. Run the plugin from **Plugins > Development > Variable exporter**
 3. Preview your variables in the plugin UI
 4. Configure export options in the Settings tab if needed
-5. Click "Export Variables" to download a JSON file
+5. Click "Export Variables" to download a JSON or SCSS file
 
 ## Export Format
 
