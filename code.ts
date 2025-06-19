@@ -67,6 +67,36 @@ function rgbToHex(r: number, g: number, b: number, a?: number): string {
 }
 
 /**
+ * Resolves a variable value, handling variable aliases/references
+ */
+async function resolveVariableValue(value: any, type: string): Promise<any> {
+  if (!value) return null;
+  
+  // Check if this is a variable alias (reference to another variable)
+  if (typeof value === 'object' && value.type === 'VARIABLE_ALIAS') {
+    try {
+      // Resolve the referenced variable
+      const referencedVariable = await figma.variables.getVariableByIdAsync(value.id);
+      if (referencedVariable) {
+        // Get the value from the referenced variable (use first mode)
+        const referencedValue = referencedVariable.valuesByMode[Object.keys(referencedVariable.valuesByMode)[0]];
+        // Recursively resolve in case the referenced variable also references another variable
+        return await resolveVariableValue(referencedValue, referencedVariable.resolvedType);
+      } else {
+        console.warn(`Could not resolve variable reference with ID: ${value.id}`);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error resolving variable alias:', error);
+      return null;
+    }
+  }
+  
+  // Format the resolved value based on its type
+  return formatVariableValue(value, type);
+}
+
+/**
  * Formats a variable value based on its type for better visualization
  */
 function formatVariableValue(value: any, type: string): any {
@@ -85,6 +115,15 @@ function formatVariableValue(value: any, type: string): any {
           hex: rgbToHex(value.r, value.g, value.b, value.a)
         };
       }
+      // If it's still an object but not an RGB object, log it for debugging
+      if (typeof value === 'object') {
+        console.warn('Unexpected color value format:', value);
+      }
+      return value;
+      
+    case 'FLOAT':
+    case 'STRING':
+    case 'BOOLEAN':
       return value;
       
     // Format other types as needed
@@ -104,13 +143,13 @@ async function getVariables(): Promise<OrganizedExport> {
   // Organize variables by type
   const variablesByType: { [type: string]: { count: number, variables: VariableExportData[] } } = {};
   
-  // Process each variable
-  variables.forEach((v: Variable) => {
+  // Process each variable (using for...of to support async/await)
+  for (const v of variables) {
     const type = v.resolvedType;
     const value = v.valuesByMode[Object.keys(v.valuesByMode)[0]] || null;
     
-    // Format the value based on its type
-    const formattedValue = formatVariableValue(value, type);
+    // Resolve the value, handling variable aliases
+    const formattedValue = await resolveVariableValue(value, type);
     
     // Create variable data object
     const variableData: VariableExportData = {
@@ -131,7 +170,7 @@ async function getVariables(): Promise<OrganizedExport> {
     // Add variable to its type group
     variablesByType[type].count++;
     variablesByType[type].variables.push(variableData);
-  });
+  }
   
   // Sort variables alphabetically within each type
   Object.keys(variablesByType).forEach(type => {
