@@ -9,15 +9,20 @@
       margin: 0;
       color: #333;
       background: #ffffff;
+      line-height: 1.5;
     }
     
     .container {
-      padding: 0;
+      padding: 24px;
     }
+    
     h1 {
-      font-size: 18px;
-      margin-bottom: 15px;
+      font-size: 20px;
+      margin-bottom: 20px;
+      font-weight: 600;
+      color: #1a1a1a;
     }
+    
     h2 {
       font-size: 16px;
       margin-top: 15px;
@@ -25,24 +30,41 @@
       border-bottom: 1px solid #eee;
       padding-bottom: 5px;
     }
+    
     button { 
-      padding: 8px 16px; 
-      margin-top: 15px;
+      padding: 12px 20px; 
+      margin-top: 16px;
       background: #18A0FB;
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-weight: 500;
       cursor: pointer;
       transition: background 0.2s ease;
+      font-size: 14px;
+      width: 100%;
     }
+    
     button:hover {
       background: #0D8CE0;
     }
+    
     .meta {
-      font-size: 12px;
+      font-size: 13px;
       color: #666;
-      margin-bottom: 15px;
+      margin-bottom: 24px;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #e9ecef;
+    }
+    
+    .meta div {
+      margin-bottom: 4px;
+    }
+    
+    .meta div:last-child {
+      margin-bottom: 0;
     }
     .format-options {
       margin-top: 15px;
@@ -64,45 +86,72 @@
     
     /* Export section styles */
     .export-section {
-        margin-bottom: 20px;
-        padding: 15px;
+        margin-bottom: 24px;
+        padding: 20px;
         border: 1px solid #e1e5e9;
-        border-radius: 6px;
-        background: #f8f9fa;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
     }
     
     .export-section h3 {
-        margin: 0 0 10px 0;
-        font-size: 14px;
+        margin: 0 0 16px 0;
+        font-size: 16px;
         font-weight: 600;
-        color: #1e1e1e;
+        color: #1a1a1a;
     }
     
     .export-options {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        margin-bottom: 10px;
+        gap: 12px;
+        margin-bottom: 16px;
     }
     
     .checkbox-group {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
+        padding: 2px 0;
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+        margin: 0;
+    }
+    
+    .checkbox-group label {
+        font-size: 13px;
+        color: #4a4a4a;
+        cursor: pointer;
     }
     
     .input-group {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
+        padding: 2px 0;
+    }
+    
+    .input-group label {
+        font-size: 13px;
+        color: #4a4a4a;
+        min-width: 80px;
     }
     
     .input-group input[type="text"], .input-group input[type="number"] {
         flex: 1;
-        padding: 4px 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 12px;
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 13px;
+        background: #ffffff;
+        transition: border-color 0.2s ease;
+    }
+    
+    .input-group input[type="text"]:focus, .input-group input[type="number"]:focus {
+        outline: none;
+        border-color: #18A0FB;
+        box-shadow: 0 0 0 3px rgba(24, 160, 251, 0.1);
     }
     
     .export-buttons {
@@ -125,56 +174,54 @@
 </head>
 <body>
   <div class="container">
-    <div style="padding: 20px;">
-      <h1>Variable Exporter</h1>
-      <div class="meta">
-        <div>File: <span id="file-name">Loading...</span></div>
-        <div>Total variables: <span id="count">0</span></div>
-      </div>
+    <h1>Variable Exporter</h1>
+    <div class="meta">
+      <div><strong>File:</strong> <span id="file-name">Loading...</span></div>
+      <div><strong>Total variables:</strong> <span id="count">0</span></div>
+    </div>
 
-      <div class="export-section">
-        <h3>JSON Export</h3>
-        <div class="export-options">
-          <div class="checkbox-group">
-            <input type="checkbox" id="organized-format" checked>
-            <label for="organized-format">Organized format (group by type)</label>
-          </div>
-          <div class="input-group">
-            <label for="json-indent">Indentation:</label>
-            <input type="number" id="json-indent" value="2" min="0" max="8">
-          </div>
+    <div class="export-section">
+      <h3>JSON Export</h3>
+      <div class="export-options">
+        <div class="checkbox-group">
+          <input type="checkbox" id="organized-format" checked>
+          <label for="organized-format">Organized format (group by type)</label>
         </div>
-        <button id="export-json">Export JSON</button>
-      </div>
-
-      <div class="export-section">
-        <h3>CSS Export</h3>
-        <div class="export-options">
-          <div class="checkbox-group">
-            <input type="checkbox" id="css-use-prefix">
-            <label for="css-use-prefix">Use variable prefix</label>
-          </div>
-          <div class="input-group">
-            <label for="css-prefix">Prefix:</label>
-            <input type="text" id="css-prefix" value="figma-" placeholder="e.g., figma-">
-          </div>
-          <div class="checkbox-group">
-            <input type="checkbox" id="css-group-collections" checked>
-            <label for="css-group-collections">Group by type</label>
-          </div>
-          <div class="checkbox-group">
-            <input type="checkbox" id="css-remove-duplicates" checked>
-            <label for="css-remove-duplicates">Remove duplicate words (e.g., accordion-accordion → accordion)</label>
-          </div>
+        <div class="input-group">
+          <label for="json-indent">Indentation:</label>
+          <input type="number" id="json-indent" value="2" min="0" max="8">
         </div>
-        <button id="export-css">Export CSS</button>
       </div>
+      <button id="export-json">Export JSON</button>
+    </div>
 
-      <div class="export-section">
-        <h3>Style Guide</h3>
-        <p>Create a visual style guide frame in your Figma file.</p>
-        <button id="create-style-guide">Create Style Guide</button>
+    <div class="export-section">
+      <h3>CSS Export</h3>
+      <div class="export-options">
+        <div class="checkbox-group">
+          <input type="checkbox" id="css-use-prefix">
+          <label for="css-use-prefix">Use variable prefix</label>
+        </div>
+        <div class="input-group">
+          <label for="css-prefix">Prefix:</label>
+          <input type="text" id="css-prefix" value="figma-" placeholder="e.g., figma-">
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="css-group-collections" checked>
+          <label for="css-group-collections">Group by type</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="css-remove-duplicates" checked>
+          <label for="css-remove-duplicates">Remove duplicate words (e.g., accordion-accordion → accordion)</label>
+        </div>
       </div>
+      <button id="export-css">Export CSS</button>
+    </div>
+
+    <div class="export-section">
+      <h3>Style Guide</h3>
+      <p style="margin: 0 0 16px 0; color: #666; font-size: 13px;">Create a visual style guide frame in your Figma file.</p>
+      <button id="create-style-guide">Create Style Guide</button>
     </div>
   </div>
     <div class="export-options">
