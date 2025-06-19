@@ -205,58 +205,75 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
       sectionTitle.characters = type;
       sectionFrame.appendChild(sectionTitle);
 
-      const itemsGridFrame = figma.createFrame();
-      itemsGridFrame.name = type + " Items";
-      itemsGridFrame.layoutMode = "HORIZONTAL"; // Use HORIZONTAL for a wrapping grid-like layout
-      itemsGridFrame.itemSpacing = ITEM_SPACING;
-      itemsGridFrame.primaryAxisSizingMode = "AUTO"; // Let it grow with content
-      itemsGridFrame.counterAxisSizingMode = "AUTO"; // Make it hug content width
-      itemsGridFrame.layoutWrap = "WRAP"; // Enable wrapping
-      itemsGridFrame.counterAxisAlignItems = 'MIN';
-      sectionFrame.appendChild(itemsGridFrame);
+      // Create a container for all rows
+      const itemsContainer = figma.createFrame();
+      itemsContainer.name = type + " Container";
+      itemsContainer.layoutMode = "VERTICAL";
+      itemsContainer.itemSpacing = ITEM_SPACING;
+      itemsContainer.primaryAxisSizingMode = "AUTO";
+      itemsContainer.counterAxisSizingMode = "AUTO";
+      sectionFrame.appendChild(itemsContainer);
 
-      for (const variable of typeData.variables) {
-        const itemFrame = figma.createFrame();
-        itemFrame.name = variable.name;
-        itemFrame.layoutMode = "VERTICAL";
-        itemFrame.itemSpacing = ITEM_SPACING / 2;
-        itemFrame.primaryAxisSizingMode = "AUTO";
-        itemFrame.counterAxisSizingMode = "AUTO"; // Make item frame hug content
-        itemsGridFrame.appendChild(itemFrame);
+      // Group variables into rows of maximum 20 items each
+      const ITEMS_PER_ROW = 20;
+      const variables = typeData.variables;
+      
+      for (let i = 0; i < variables.length; i += ITEMS_PER_ROW) {
+        const rowVariables = variables.slice(i, i + ITEMS_PER_ROW);
+        
+        // Create a row frame for this batch of variables
+        const rowFrame = figma.createFrame();
+        rowFrame.name = `${type} Row ${Math.floor(i / ITEMS_PER_ROW) + 1}`;
+        rowFrame.layoutMode = "HORIZONTAL";
+        rowFrame.itemSpacing = ITEM_SPACING;
+        rowFrame.primaryAxisSizingMode = "AUTO";
+        rowFrame.counterAxisSizingMode = "AUTO";
+        rowFrame.counterAxisAlignItems = 'MIN';
+        itemsContainer.appendChild(rowFrame);
 
-        if (variable.type === "COLOR" && variable.value && variable.value.rgb) {
-          const colorSwatch = figma.createRectangle();
-          colorSwatch.name = "Color Swatch";
-          colorSwatch.resize(COLOR_SWATCH_SIZE, COLOR_SWATCH_SIZE);
-          const { r, g, b, a } = variable.value.rgb;
-          colorSwatch.fills = [{ type: "SOLID", color: { r, g, b }, opacity: a !== undefined ? a : 1 }];
-          colorSwatch.cornerRadius = 4;
-          itemFrame.appendChild(colorSwatch);
+        for (const variable of rowVariables) {
+          const itemFrame = figma.createFrame();
+          itemFrame.name = variable.name;
+          itemFrame.layoutMode = "VERTICAL";
+          itemFrame.itemSpacing = ITEM_SPACING / 2;
+          itemFrame.primaryAxisSizingMode = "AUTO";
+          itemFrame.counterAxisSizingMode = "AUTO"; // Make item frame hug content
+          rowFrame.appendChild(itemFrame);
 
-          const nameText = figma.createText();
-          nameText.fontName = { family: "Inter", style: "Regular" };
-          nameText.fontSize = 12;
-          nameText.characters = variable.name;
-          itemFrame.appendChild(nameText);
+          if (variable.type === "COLOR" && variable.value && variable.value.rgb) {
+            const colorSwatch = figma.createRectangle();
+            colorSwatch.name = "Color Swatch";
+            colorSwatch.resize(COLOR_SWATCH_SIZE, COLOR_SWATCH_SIZE);
+            const { r, g, b, a } = variable.value.rgb;
+            colorSwatch.fills = [{ type: "SOLID", color: { r, g, b }, opacity: a !== undefined ? a : 1 }];
+            colorSwatch.cornerRadius = 4;
+            itemFrame.appendChild(colorSwatch);
 
-          const hexText = figma.createText();
-          hexText.fontName = { family: "Inter", style: "Regular" };
-          hexText.fontSize = 10;
-          hexText.characters = variable.value.hex || "";
-          itemFrame.appendChild(hexText);
-        } else {
-          // Handle other types (FLOAT, STRING, BOOLEAN)
-          const nameText = figma.createText();
-          nameText.fontName = { family: "Inter", style: "Regular" };
-          nameText.fontSize = 12;
-          nameText.characters = variable.name;
-          itemFrame.appendChild(nameText);
+            const nameText = figma.createText();
+            nameText.fontName = { family: "Inter", style: "Regular" };
+            nameText.fontSize = 12;
+            nameText.characters = variable.name;
+            itemFrame.appendChild(nameText);
 
-          const valueText = figma.createText();
-          valueText.fontName = { family: "Inter", style: "Regular" };
-          valueText.fontSize = 10;
-          valueText.characters = String(variable.value);
-          itemFrame.appendChild(valueText);
+            const hexText = figma.createText();
+            hexText.fontName = { family: "Inter", style: "Regular" };
+            hexText.fontSize = 10;
+            hexText.characters = variable.value.hex || "";
+            itemFrame.appendChild(hexText);
+          } else {
+            // Handle other types (FLOAT, STRING, BOOLEAN)
+            const nameText = figma.createText();
+            nameText.fontName = { family: "Inter", style: "Regular" };
+            nameText.fontSize = 12;
+            nameText.characters = variable.name;
+            itemFrame.appendChild(nameText);
+
+            const valueText = figma.createText();
+            valueText.fontName = { family: "Inter", style: "Regular" };
+            valueText.fontSize = 10;
+            valueText.characters = String(variable.value);
+            itemFrame.appendChild(valueText);
+          }
         }
       }
     }
