@@ -368,7 +368,7 @@ function cleanVariableName(name: string, prefix: string, removeDuplicates: boole
 }
 
 // Show the UI and run the plugin
-figma.showUI(__html__, { width: 450, height: 550 });
+figma.showUI(__html__, { width: 450, height: 640 });
 getVariables();
 
 // Listen for messages from the UI

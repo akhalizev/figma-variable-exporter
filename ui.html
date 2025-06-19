@@ -9,16 +9,22 @@
       margin: 0;
       color: #333;
       background: #ffffff;
-      line-height: 1.5;
+      line-height: 1.4;
+      overflow-x: hidden;
+      height: 100vh;
     }
     
     .container {
-      padding: 24px;
+      padding: 16px;
+      height: calc(100vh - 32px);
+      overflow-y: auto;
+      box-sizing: border-box;
+      scroll-behavior: smooth;
     }
     
     h1 {
-      font-size: 20px;
-      margin-bottom: 20px;
+      font-size: 18px;
+      margin: 0 0 12px 0;
       font-weight: 600;
       color: #1a1a1a;
     }
@@ -32,8 +38,8 @@
     }
     
     button { 
-      padding: 12px 20px; 
-      margin-top: 16px;
+      padding: 10px 16px; 
+      margin-top: 10px;
       background: #18A0FB;
       color: white;
       border: none;
@@ -41,7 +47,7 @@
       font-weight: 500;
       cursor: pointer;
       transition: background 0.2s ease;
-      font-size: 14px;
+      font-size: 13px;
       width: 100%;
     }
     
@@ -50,10 +56,10 @@
     }
     
     .meta {
-      font-size: 13px;
+      font-size: 12px;
       color: #666;
-      margin-bottom: 24px;
-      padding: 16px;
+      margin-bottom: 16px;
+      padding: 12px 14px;
       background: #f8f9fa;
       border-radius: 8px;
       border: 1px solid #e9ecef;
@@ -86,17 +92,21 @@
     
     /* Export section styles */
     .export-section {
-        margin-bottom: 24px;
-        padding: 20px;
+        margin-bottom: 14px;
+        padding: 14px;
         border: 1px solid #e1e5e9;
-        border-radius: 12px;
+        border-radius: 10px;
         background: #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    
+    .export-section:last-child {
+        margin-bottom: 0;
     }
     
     .export-section h3 {
-        margin: 0 0 16px 0;
-        font-size: 16px;
+        margin: 0 0 10px 0;
+        font-size: 15px;
         font-weight: 600;
         color: #1a1a1a;
     }
@@ -104,15 +114,15 @@
     .export-options {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        margin-bottom: 16px;
+        gap: 7px;
+        margin-bottom: 10px;
     }
     
     .checkbox-group {
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 2px 0;
+        padding: 1px 0;
     }
     
     .checkbox-group input[type="checkbox"] {
@@ -120,30 +130,31 @@
     }
     
     .checkbox-group label {
-        font-size: 13px;
+        font-size: 12px;
         color: #4a4a4a;
         cursor: pointer;
+        line-height: 1.3;
     }
     
     .input-group {
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 2px 0;
+        padding: 1px 0;
     }
     
     .input-group label {
-        font-size: 13px;
+        font-size: 12px;
         color: #4a4a4a;
-        min-width: 80px;
+        min-width: 70px;
     }
     
     .input-group input[type="text"], .input-group input[type="number"] {
         flex: 1;
-        padding: 8px 12px;
+        padding: 6px 10px;
         border: 1px solid #d1d5db;
         border-radius: 6px;
-        font-size: 13px;
+        font-size: 12px;
         background: #ffffff;
         transition: border-color 0.2s ease;
     }
@@ -151,7 +162,7 @@
     .input-group input[type="text"]:focus, .input-group input[type="number"]:focus {
         outline: none;
         border-color: #18A0FB;
-        box-shadow: 0 0 0 3px rgba(24, 160, 251, 0.1);
+        box-shadow: 0 0 0 2px rgba(24, 160, 251, 0.1);
     }
     
     .export-buttons {
@@ -220,24 +231,8 @@
 
     <div class="export-section">
       <h3>Style Guide</h3>
-      <p style="margin: 0 0 16px 0; color: #666; font-size: 13px;">Create a visual style guide frame in your Figma file.</p>
+      <p style="margin: 0 0 12px 0; color: #666; font-size: 12px;">Create a visual style guide frame in your Figma file.</p>
       <button id="create-style-guide">Create Style Guide</button>
-    </div>
-  </div>
-    <div class="export-options">
-      <div class="checkbox-group">
-        <input type="checkbox" id="include-comments" checked>
-        <label for="include-comments">Include Comments</label>
-      </div>
-      <div class="input-group">
-        <label for="file-name-input">File Name:</label>
-        <input type="text" id="file-name-input" placeholder="Enter file name">
-      </div>
-    </div>
-    
-    <div class="export-buttons">
-      <button id="export">Export Variables</button>
-      <button id="create-style-guide" style="background-color: #4CAF50;">Create Style Guide Frame</button>
     </div>
   </div>
 
