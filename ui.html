@@ -4,10 +4,15 @@
   <title>Variable Exporter and Counter</title>
   <style>
     body { 
-      font-family: Arial, sans-serif; 
-      padding: 20px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+      padding: 0;
       margin: 0;
       color: #333;
+      background: #ffffff;
+    }
+    
+    .container {
+      padding: 0;
     }
     h1 {
       font-size: 18px;
@@ -151,23 +156,39 @@
     
     .tabs {
         display: flex;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid #e1e5e9;
         margin-bottom: 20px;
+        background: #f8f9fa;
+        border-radius: 6px 6px 0 0;
+        overflow: hidden;
     }
     
     .tab-button {
-        background: none;
+        background: #f0f0f0;
         border: none;
-        padding: 10px 15px;
+        padding: 12px 20px;
         cursor: pointer;
-        border-bottom: 2px solid transparent;
+        border-bottom: 3px solid transparent;
         margin: 0;
         margin-top: 0;
+        flex: 1;
+        font-size: 14px;
+        font-weight: 500;
+        color: #666;
+        transition: all 0.2s ease;
+        border-radius: 0;
+    }
+    
+    .tab-button:hover {
+        background: #e8e8e8;
+        color: #333;
     }
     
     .tab-button.active {
+        background: white;
         border-bottom-color: #18A0FB;
         color: #18A0FB;
+        font-weight: 600;
     }
     
     .tab-content {
@@ -180,63 +201,69 @@
   </style>
 </head>
 <body>
-  <div class="tabs">
-    <button class="tab-button active" onclick="showTab('preview')">Preview</button>
-    <button class="tab-button" onclick="showTab('export')">Export</button>
-  </div>
-
-  <div id="preview-tab" class="tab-content active">
-    <h1>Variable Exporter</h1>
-    <div class="meta">
-      <div>File: <span id="file-name">Loading...</span></div>
-      <div>Total variables: <span id="count">0</span></div>
+  <div class="container">
+    <div class="tabs">
+      <button class="tab-button active" onclick="showTab('preview')">Preview</button>
+      <button class="tab-button" onclick="showTab('export')">Export</button>
     </div>
-    <div id="variables-preview">Loading variables...</div>
-  </div>
 
-  <div id="export-tab" class="tab-content">
-    <div class="export-section">
-      <h3>JSON Export</h3>
-      <div class="export-options">
-        <div class="checkbox-group">
-          <input type="checkbox" id="organized-format" checked>
-          <label for="organized-format">Organized format (group by type)</label>
+    <div id="preview-tab" class="tab-content active">
+      <div style="padding: 20px;">
+        <h1>Variable Exporter</h1>
+        <div class="meta">
+          <div>File: <span id="file-name">Loading...</span></div>
+          <div>Total variables: <span id="count">0</span></div>
         </div>
-        <div class="input-group">
-          <label for="json-indent">Indentation:</label>
-          <input type="number" id="json-indent" value="2" min="0" max="8">
+        <div id="variables-preview">Loading variables...</div>
+      </div>
+    </div>
+
+    <div id="export-tab" class="tab-content">
+      <div style="padding: 20px;">
+        <div class="export-section">
+          <h3>JSON Export</h3>
+          <div class="export-options">
+            <div class="checkbox-group">
+              <input type="checkbox" id="organized-format" checked>
+              <label for="organized-format">Organized format (group by type)</label>
+            </div>
+            <div class="input-group">
+              <label for="json-indent">Indentation:</label>
+              <input type="number" id="json-indent" value="2" min="0" max="8">
+            </div>
+          </div>
+          <button id="export-json">Export JSON</button>
+        </div>
+
+        <div class="export-section">
+          <h3>CSS Export</h3>
+          <div class="export-options">
+            <div class="checkbox-group">
+              <input type="checkbox" id="css-use-prefix">
+              <label for="css-use-prefix">Use variable prefix</label>
+            </div>
+            <div class="input-group">
+              <label for="css-prefix">Prefix:</label>
+              <input type="text" id="css-prefix" value="figma-" placeholder="e.g., figma-">
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="css-group-collections" checked>
+              <label for="css-group-collections">Group by type</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="css-remove-duplicates" checked>
+              <label for="css-remove-duplicates">Remove duplicate words (e.g., accordion-accordion → accordion)</label>
+            </div>
+          </div>
+          <button id="export-css">Export CSS</button>
+        </div>
+
+        <div class="export-section">
+          <h3>Style Guide</h3>
+          <p>Create a visual style guide frame in your Figma file.</p>
+          <button id="create-style-guide">Create Style Guide</button>
         </div>
       </div>
-      <button id="export-json">Export JSON</button>
-    </div>
-
-    <div class="export-section">
-      <h3>CSS Export</h3>
-      <div class="export-options">
-        <div class="checkbox-group">
-          <input type="checkbox" id="css-use-prefix">
-          <label for="css-use-prefix">Use variable prefix</label>
-        </div>
-        <div class="input-group">
-          <label for="css-prefix">Prefix:</label>
-          <input type="text" id="css-prefix" value="figma-" placeholder="e.g., figma-">
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="css-group-collections" checked>
-          <label for="css-group-collections">Group by type</label>
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="css-remove-duplicates" checked>
-          <label for="css-remove-duplicates">Remove duplicate words (e.g., accordion-accordion → accordion)</label>
-        </div>
-      </div>
-      <button id="export-css">Export CSS</button>
-    </div>
-
-    <div class="export-section">
-      <h3>Style Guide</h3>
-      <p>Create a visual style guide frame in your Figma file.</p>
-      <button id="create-style-guide">Create Style Guide</button>
     </div>
   </div>
     <div class="export-options">
