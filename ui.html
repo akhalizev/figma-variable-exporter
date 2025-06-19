@@ -189,6 +189,13 @@
     <div class="meta">
       <div><strong>File:</strong> <span id="file-name">Loading...</span></div>
       <div><strong>Total variables:</strong> <span id="count">0</span></div>
+      <div><strong>Available modes:</strong> <span id="available-modes">Loading...</span></div>
+      <div class="input-group" style="margin-top: 8px;">
+        <label for="mode-select">Export mode:</label>
+        <select id="mode-select" style="flex: 1; padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;">
+          <option value="all">All modes</option>
+        </select>
+      </div>
     </div>
 
     <div class="export-section">
@@ -244,12 +251,14 @@
     document.getElementById('export-json').addEventListener('click', () => {
       const organized = document.getElementById('organized-format').checked;
       const indent = parseInt(document.getElementById('json-indent').value);
+      const selectedMode = document.getElementById('mode-select').value;
       
       parent.postMessage({
         pluginMessage: {
           type: 'export-json',
           organized: organized,
-          indent: indent
+          indent: indent,
+          mode: selectedMode
         }
       }, '*');
     });
@@ -259,6 +268,7 @@
       const prefix = document.getElementById('css-prefix').value;
       const groupByCollection = document.getElementById('css-group-collections').checked;
       const removeDuplicateWords = document.getElementById('css-remove-duplicates').checked;
+      const selectedMode = document.getElementById('mode-select').value;
       
       parent.postMessage({
         pluginMessage: {
@@ -267,7 +277,8 @@
             usePrefix: usePrefix,
             prefix: prefix,
             groupByCollection: groupByCollection,
-            removeDuplicateWords: removeDuplicateWords
+            removeDuplicateWords: removeDuplicateWords,
+            mode: selectedMode
           }
         }
       }, '*');
@@ -289,10 +300,12 @@
       
       if (msg.type === 'variables-data') {
         exportData = msg.data;
+        updateUI(msg.data);
       } else if (msg.count !== undefined) {
         exportData = msg.exportData;
         document.getElementById('count').textContent = msg.count;
         document.getElementById('file-name').textContent = msg.exportData.metadata.fileName;
+        updateUI(msg.exportData);
       } else if (msg.type === 'download-file') {
         // Handle file downloads
         const blob = new Blob([msg.content], { type: msg.mimeType });
@@ -306,6 +319,27 @@
         URL.revokeObjectURL(url);
       }
     });
+    
+    function updateUI(data) {
+      // Update available modes
+      if (data.metadata && data.metadata.modes) {
+        const modesText = data.metadata.modes.join(', ');
+        document.getElementById('available-modes').textContent = modesText;
+        
+        // Populate mode select dropdown
+        const modeSelect = document.getElementById('mode-select');
+        // Clear existing options except "All modes"
+        modeSelect.innerHTML = '<option value="all">All modes</option>';
+        
+        // Add individual mode options
+        data.metadata.modes.forEach(mode => {
+          const option = document.createElement('option');
+          option.value = mode;
+          option.textContent = mode;
+          modeSelect.appendChild(option);
+        });
+      }
+    }
     
     // Request initial data
     parent.postMessage({

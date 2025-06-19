@@ -8,6 +8,7 @@ interface VariableExportData {
   value: any; // Flexible to handle different variable value types
   hexValue?: string; // Optional hex value for colors
   variableId: string; // Variable ID for reference
+  mode?: string; // Mode name for this value
 }
 
 // Define interface for color value
@@ -23,11 +24,20 @@ interface OrganizedExport {
     fileName: string;
     fileKey?: string;
     totalVariables: number;
+    modes: string[]; // Available modes
   };
   variablesByType: {
     [type: string]: {
       count: number;
       variables: VariableExportData[];
+    };
+  };
+  variablesByMode?: {
+    [mode: string]: {
+      [type: string]: {
+        count: number;
+        variables: VariableExportData[];
+      };
     };
   };
 }
@@ -43,6 +53,7 @@ interface CssExportOptions {
   prefix: string;
   groupByCollection: boolean;
   removeDuplicateWords: boolean;
+  mode?: string;
 }
 
 /**
@@ -140,41 +151,100 @@ async function getVariables(): Promise<OrganizedExport> {
   const fileName = figma.root.name;
   const fileKey = figma.fileKey;
   
-  // Organize variables by type
+  // Get all available modes from variables
+  const allModes = new Set<string>();
+  const modeIdToName = new Map<string, string>();
+  
+  // Collect all modes from all variables
+  for (const v of variables) {
+    for (const modeId of Object.keys(v.valuesByMode)) {
+      if (!modeIdToName.has(modeId)) {
+        // Get the collection to find mode names
+        const collection = await figma.variables.getVariableCollectionByIdAsync(v.variableCollectionId);
+        if (collection) {
+          const mode = collection.modes.find(m => m.modeId === modeId);
+          if (mode) {
+            modeIdToName.set(modeId, mode.name);
+            allModes.add(mode.name);
+          }
+        }
+      }
+    }
+  }
+  
+  const modeNames = Array.from(allModes).sort();
+  
+  // Organize variables by type (for default/first mode compatibility)
   const variablesByType: { [type: string]: { count: number, variables: VariableExportData[] } } = {};
+  
+  // Organize variables by mode
+  const variablesByMode: { [mode: string]: { [type: string]: { count: number, variables: VariableExportData[] } } } = {};
+  
+  // Initialize mode structures
+  for (const modeName of modeNames) {
+    variablesByMode[modeName] = {};
+  }
   
   // Process each variable (using for...of to support async/await)
   for (const v of variables) {
     const type = v.resolvedType;
-    const value = v.valuesByMode[Object.keys(v.valuesByMode)[0]] || null;
     
-    // Resolve the value, handling variable aliases
-    const formattedValue = await resolveVariableValue(value, type);
-    
-    // Create variable data object
-    const variableData: VariableExportData = {
-      name: v.name,
-      type: type,
-      value: formattedValue,
-      variableId: v.id
-    };
-    
-    // Initialize type group if it doesn't exist
-    if (!variablesByType[type]) {
-      variablesByType[type] = {
-        count: 0,
-        variables: []
+    // Process each mode for this variable
+    for (const modeId of Object.keys(v.valuesByMode)) {
+      const value = v.valuesByMode[modeId];
+      const modeName = modeIdToName.get(modeId) || 'Unknown Mode';
+      
+      // Resolve the value, handling variable aliases
+      const formattedValue = await resolveVariableValue(value, type);
+      
+      // Create variable data object
+      const variableData: VariableExportData = {
+        name: v.name,
+        type: type,
+        value: formattedValue,
+        variableId: v.id,
+        mode: modeName
       };
+      
+      // Add to mode-specific organization
+      if (!variablesByMode[modeName][type]) {
+        variablesByMode[modeName][type] = {
+          count: 0,
+          variables: []
+        };
+      }
+      variablesByMode[modeName][type].count++;
+      variablesByMode[modeName][type].variables.push(variableData);
+      
+      // For backward compatibility, also add to the main structure (use first mode found)
+      if (!variablesByType[type]) {
+        variablesByType[type] = {
+          count: 0,
+          variables: []
+        };
+      }
+      
+      // Only add to main structure if this is the first mode we encounter for this variable
+      const existingVariable = variablesByType[type].variables.find(existing => existing.variableId === v.id);
+      if (!existingVariable) {
+        variablesByType[type].count++;
+        variablesByType[type].variables.push({
+          ...variableData,
+          mode: undefined // Remove mode info for main structure
+        });
+      }
     }
-    
-    // Add variable to its type group
-    variablesByType[type].count++;
-    variablesByType[type].variables.push(variableData);
   }
   
-  // Sort variables alphabetically within each type
+  // Sort variables alphabetically within each type and mode
   Object.keys(variablesByType).forEach(type => {
     variablesByType[type].variables.sort((a, b) => a.name.localeCompare(b.name));
+  });
+  
+  Object.keys(variablesByMode).forEach(modeName => {
+    Object.keys(variablesByMode[modeName]).forEach(type => {
+      variablesByMode[modeName][type].variables.sort((a, b) => a.name.localeCompare(b.name));
+    });
   });
   
   // Create organized export structure
@@ -183,9 +253,11 @@ async function getVariables(): Promise<OrganizedExport> {
       exportDate: new Date().toISOString(),
       fileName: fileName,
       fileKey: fileKey,
-      totalVariables: count
+      totalVariables: count,
+      modes: modeNames
     },
-    variablesByType: variablesByType
+    variablesByType: variablesByType,
+    variablesByMode: variablesByMode
   };
 
   // Send data to the UI
@@ -329,15 +401,66 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
 
 function generateCssVariables(data: OrganizedExport, options: CssExportOptions): string {
   let css = '/* Figma Variables Export */\n';
-  css += '/* Generated on ' + new Date().toISOString() + ' */\n\n';
-  css += ':root {\n';
+  css += '/* Generated on ' + new Date().toISOString() + ' */\n';
+  
+  // Determine which data to use based on mode selection
+  let dataToUse: { [type: string]: { count: number, variables: VariableExportData[] } };
+  
+  if (options.mode && options.mode !== 'all' && data.variablesByMode && data.variablesByMode[options.mode]) {
+    // Use specific mode data
+    dataToUse = data.variablesByMode[options.mode];
+    css += `/* Mode: ${options.mode} */\n`;
+  } else if (options.mode === 'all' && data.variablesByMode) {
+    // Export all modes
+    css += '/* All Modes */\n\n';
+    
+    for (const modeName of Object.keys(data.variablesByMode)) {
+      css += `/* Mode: ${modeName} */\n`;
+      css += `[data-mode="${modeName}"] {\n`;
+      
+      const prefix = options.usePrefix ? options.prefix : '';
+      const modeData = data.variablesByMode[modeName];
+      
+      if (options.groupByCollection) {
+        for (const typeName in modeData) {
+          const typeData = modeData[typeName];
+          css += `  /* ${typeName} */\n`;
+          
+          typeData.variables.forEach((variable: VariableExportData) => {
+            const variableName = cleanVariableName(variable.name, prefix, options.removeDuplicateWords);
+            const value = formatCssValue(variable.value, variable.type);
+            css += `  --${variableName}: ${value};\n`;
+          });
+          
+          css += '\n';
+        }
+      } else {
+        for (const typeName in modeData) {
+          const typeData = modeData[typeName];
+          typeData.variables.forEach((variable: VariableExportData) => {
+            const variableName = cleanVariableName(variable.name, prefix, options.removeDuplicateWords);
+            const value = formatCssValue(variable.value, variable.type);
+            css += `  --${variableName}: ${value};\n`;
+          });
+        }
+      }
+      
+      css += '}\n\n';
+    }
+    return css;
+  } else {
+    // Use default data (backward compatibility)
+    dataToUse = data.variablesByType;
+  }
+  
+  css += '\n:root {\n';
 
   const prefix = options.usePrefix ? options.prefix : '';
 
   if (options.groupByCollection) {
     // Group by type (since that's how the data is organized)
-    for (const typeName in data.variablesByType) {
-      const typeData = data.variablesByType[typeName];
+    for (const typeName in dataToUse) {
+      const typeData = dataToUse[typeName];
       css += `  /* ${typeName} */\n`;
       
       typeData.variables.forEach((variable: VariableExportData) => {
@@ -350,8 +473,8 @@ function generateCssVariables(data: OrganizedExport, options: CssExportOptions):
     }
   } else {
     // Flat structure - iterate through all variable types
-    for (const typeName in data.variablesByType) {
-      const typeData = data.variablesByType[typeName];
+    for (const typeName in dataToUse) {
+      const typeData = dataToUse[typeName];
       typeData.variables.forEach((variable: VariableExportData) => {
         const variableName = cleanVariableName(variable.name, prefix, options.removeDuplicateWords);
         const value = formatCssValue(variable.value, variable.type);
@@ -431,19 +554,48 @@ figma.ui.onmessage = async (msg) => {
     figma.ui.postMessage({ type: 'variables-data', data: variables });
   } else if (msg.type === 'export-json') {
     const variables = await getVariables();
-    const jsonString = JSON.stringify(variables, null, msg.indent || 2);
+    let dataToExport;
+    let filename = `${figma.root.name.replace(/[^a-zA-Z0-9]/g, '_')}_variables`;
+    
+    // Handle mode selection for JSON export
+    if (msg.mode && msg.mode !== 'all' && variables.variablesByMode && variables.variablesByMode[msg.mode]) {
+      // Export specific mode
+      dataToExport = {
+        ...variables,
+        variablesByType: variables.variablesByMode[msg.mode],
+        mode: msg.mode
+      };
+      filename += `_${msg.mode.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    } else if (msg.mode === 'all') {
+      // Export all modes structure
+      dataToExport = variables;
+    } else {
+      // Default export (backward compatibility)
+      dataToExport = variables;
+    }
+    
+    const jsonString = JSON.stringify(dataToExport, null, msg.indent || 2);
     figma.ui.postMessage({ 
       type: 'download-file', 
-      filename: `${figma.root.name.replace(/[^a-zA-Z0-9]/g, '_')}_variables.json`,
+      filename: `${filename}.json`,
       content: jsonString,
       mimeType: 'application/json'
     });
   } else if (msg.type === 'export-css') {
     const variables = await getVariables();
     const cssContent = generateCssVariables(variables, msg.options);
+    let filename = `${figma.root.name.replace(/[^a-zA-Z0-9]/g, '_')}_variables`;
+    
+    // Add mode to filename if specific mode is selected
+    if (msg.options.mode && msg.options.mode !== 'all') {
+      filename += `_${msg.options.mode.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    } else if (msg.options.mode === 'all') {
+      filename += '_all_modes';
+    }
+    
     figma.ui.postMessage({ 
       type: 'download-file', 
-      filename: `${figma.root.name.replace(/[^a-zA-Z0-9]/g, '_')}_variables.css`,
+      filename: `${filename}.css`,
       content: cssContent,
       mimeType: 'text/plain'
     });
