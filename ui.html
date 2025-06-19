@@ -44,32 +44,6 @@
       color: #666;
       margin-bottom: 15px;
     }
-    #variables-preview {
-      margin-top: 15px;
-      max-height: 350px;
-      overflow-y: auto;
-      border: 1px solid #eee;
-      border-radius: 4px;
-      padding: 10px;
-    }
-    .variable-group {
-      margin-bottom: 15px;
-    }
-    .variable-item {
-      margin-bottom: 8px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #f5f5f5;
-      font-size: 13px;
-    }
-    .color-preview {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 1px solid #ddd;
-      vertical-align: middle;
-      margin-right: 5px;
-      border-radius: 3px;
-    }
     .format-options {
       margin-top: 15px;
       padding: 10px;
@@ -81,20 +55,6 @@
       padding: 5px;
       border-radius: 4px;
       border: 1px solid #ddd;
-    }
-    .tab-controls {
-      display: flex;
-      border-bottom: 1px solid #eee;
-      margin-bottom: 10px;
-    }
-    .tab {
-      padding: 8px 12px;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-    }
-    .tab.active {
-      border-bottom: 2px solid #18A0FB;
-      font-weight: 500;
     }
     .type-count {
       color: #999;
@@ -154,43 +114,6 @@
         flex: 1;
     }
     
-    .tabs {
-        display: flex;
-        border-bottom: 1px solid #e1e5e9;
-        margin-bottom: 20px;
-        background: #f8f9fa;
-        border-radius: 6px 6px 0 0;
-        overflow: hidden;
-    }
-    
-    .tab-button {
-        background: #f0f0f0;
-        border: none;
-        padding: 12px 20px;
-        cursor: pointer;
-        border-bottom: 3px solid transparent;
-        margin: 0;
-        margin-top: 0;
-        flex: 1;
-        font-size: 14px;
-        font-weight: 500;
-        color: #666;
-        transition: all 0.2s ease;
-        border-radius: 0;
-    }
-    
-    .tab-button:hover {
-        background: #e8e8e8;
-        color: #333;
-    }
-    
-    .tab-button.active {
-        background: white;
-        border-bottom-color: #18A0FB;
-        color: #18A0FB;
-        font-weight: 600;
-    }
-    
     .tab-content {
         display: none;
     }
@@ -202,67 +125,55 @@
 </head>
 <body>
   <div class="container">
-    <div class="tabs">
-      <button class="tab-button active" onclick="showTab('preview')">Preview</button>
-      <button class="tab-button" onclick="showTab('export')">Export</button>
-    </div>
-
-    <div id="preview-tab" class="tab-content active">
-      <div style="padding: 20px;">
-        <h1>Variable Exporter</h1>
-        <div class="meta">
-          <div>File: <span id="file-name">Loading...</span></div>
-          <div>Total variables: <span id="count">0</span></div>
-        </div>
-        <div id="variables-preview">Loading variables...</div>
+    <div style="padding: 20px;">
+      <h1>Variable Exporter</h1>
+      <div class="meta">
+        <div>File: <span id="file-name">Loading...</span></div>
+        <div>Total variables: <span id="count">0</span></div>
       </div>
-    </div>
 
-    <div id="export-tab" class="tab-content">
-      <div style="padding: 20px;">
-        <div class="export-section">
-          <h3>JSON Export</h3>
-          <div class="export-options">
-            <div class="checkbox-group">
-              <input type="checkbox" id="organized-format" checked>
-              <label for="organized-format">Organized format (group by type)</label>
-            </div>
-            <div class="input-group">
-              <label for="json-indent">Indentation:</label>
-              <input type="number" id="json-indent" value="2" min="0" max="8">
-            </div>
+      <div class="export-section">
+        <h3>JSON Export</h3>
+        <div class="export-options">
+          <div class="checkbox-group">
+            <input type="checkbox" id="organized-format" checked>
+            <label for="organized-format">Organized format (group by type)</label>
           </div>
-          <button id="export-json">Export JSON</button>
-        </div>
-
-        <div class="export-section">
-          <h3>CSS Export</h3>
-          <div class="export-options">
-            <div class="checkbox-group">
-              <input type="checkbox" id="css-use-prefix">
-              <label for="css-use-prefix">Use variable prefix</label>
-            </div>
-            <div class="input-group">
-              <label for="css-prefix">Prefix:</label>
-              <input type="text" id="css-prefix" value="figma-" placeholder="e.g., figma-">
-            </div>
-            <div class="checkbox-group">
-              <input type="checkbox" id="css-group-collections" checked>
-              <label for="css-group-collections">Group by type</label>
-            </div>
-            <div class="checkbox-group">
-              <input type="checkbox" id="css-remove-duplicates" checked>
-              <label for="css-remove-duplicates">Remove duplicate words (e.g., accordion-accordion → accordion)</label>
-            </div>
+          <div class="input-group">
+            <label for="json-indent">Indentation:</label>
+            <input type="number" id="json-indent" value="2" min="0" max="8">
           </div>
-          <button id="export-css">Export CSS</button>
         </div>
+        <button id="export-json">Export JSON</button>
+      </div>
 
-        <div class="export-section">
-          <h3>Style Guide</h3>
-          <p>Create a visual style guide frame in your Figma file.</p>
-          <button id="create-style-guide">Create Style Guide</button>
+      <div class="export-section">
+        <h3>CSS Export</h3>
+        <div class="export-options">
+          <div class="checkbox-group">
+            <input type="checkbox" id="css-use-prefix">
+            <label for="css-use-prefix">Use variable prefix</label>
+          </div>
+          <div class="input-group">
+            <label for="css-prefix">Prefix:</label>
+            <input type="text" id="css-prefix" value="figma-" placeholder="e.g., figma-">
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="css-group-collections" checked>
+            <label for="css-group-collections">Group by type</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="css-remove-duplicates" checked>
+            <label for="css-remove-duplicates">Remove duplicate words (e.g., accordion-accordion → accordion)</label>
+          </div>
         </div>
+        <button id="export-css">Export CSS</button>
+      </div>
+
+      <div class="export-section">
+        <h3>Style Guide</h3>
+        <p>Create a visual style guide frame in your Figma file.</p>
+        <button id="create-style-guide">Create Style Guide</button>
       </div>
     </div>
   </div>
@@ -286,25 +197,6 @@
   <script>
     // State variables
     let exportData = null;
-    
-    // Function to show/hide tabs
-    function showTab(tabName) {
-      // Hide all tab contents
-      document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-      });
-      
-      // Remove active class from all tab buttons
-      document.querySelectorAll('.tab-button').forEach(button => {
-        button.classList.remove('active');
-      });
-      
-      // Show selected tab content
-      document.getElementById(tabName + '-tab').classList.add('active');
-      
-      // Add active class to clicked button
-      event.target.classList.add('active');
-    }
     
     // Event listeners for export buttons
     document.getElementById('export-json').addEventListener('click', () => {
@@ -349,81 +241,16 @@
     });
     
     // Function to render preview
-    function renderPreview(data) {
-      const previewEl = document.getElementById('variables-preview');
-      previewEl.innerHTML = '';
-      
-      if (!data) {
-        previewEl.textContent = 'No variables found';
-        return;
-      }
-      
-      const { variablesByType } = data;
-      
-      if (Object.keys(variablesByType).length === 0) {
-        previewEl.textContent = 'No variables found';
-        return;
-      }
-      
-      // Create groups for each variable type
-      Object.keys(variablesByType).forEach(type => {
-        const typeData = variablesByType[type];
-        
-        const groupEl = document.createElement('div');
-        groupEl.className = 'variable-group';
-        
-        const titleEl = document.createElement('div');
-        titleEl.className = 'variable-group-title';
-        titleEl.textContent = `${type} (${typeData.count})`;
-        groupEl.appendChild(titleEl);
-        
-        typeData.variables.forEach(variable => {
-          const itemEl = document.createElement('div');
-          itemEl.className = 'variable-item';
-          
-          const nameEl = document.createElement('span');
-          nameEl.className = 'variable-name';
-          nameEl.textContent = variable.name;
-          itemEl.appendChild(nameEl);
-          
-          const valueEl = document.createElement('span');
-          valueEl.className = 'variable-value';
-          
-          if (type === 'COLOR' && variable.value && typeof variable.value === 'object' && variable.value.hex) {
-            // Create color swatch for color variables
-            const swatchEl = document.createElement('span');
-            swatchEl.className = 'color-swatch';
-            swatchEl.style.backgroundColor = variable.value.hex;
-            swatchEl.title = variable.value.hex;
-            valueEl.appendChild(swatchEl);
-            
-            const hexEl = document.createElement('span');
-            hexEl.textContent = variable.value.hex;
-            valueEl.appendChild(hexEl);
-          } else {
-            valueEl.textContent = JSON.stringify(variable.value);
-          }
-          
-          itemEl.appendChild(valueEl);
-          groupEl.appendChild(itemEl);
-        });
-        
-        previewEl.appendChild(groupEl);
-      });
-    }
-    
     // Handle messages from plugin
     window.addEventListener('message', (event) => {
       const msg = event.data.pluginMessage;
       
       if (msg.type === 'variables-data') {
         exportData = msg.data;
-        renderPreview(exportData);
       } else if (msg.count !== undefined) {
         exportData = msg.exportData;
         document.getElementById('count').textContent = msg.count;
         document.getElementById('file-name').textContent = msg.exportData.metadata.fileName;
-        renderPreview(msg.exportData);
       } else if (msg.type === 'download-file') {
         // Handle file downloads
         const blob = new Blob([msg.content], { type: msg.mimeType });
