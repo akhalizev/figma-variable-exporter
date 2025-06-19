@@ -196,7 +196,7 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
       sectionFrame.layoutMode = "VERTICAL";
       sectionFrame.itemSpacing = ITEM_SPACING * 2;
       sectionFrame.primaryAxisSizingMode = "AUTO";
-      sectionFrame.layoutAlign = "STRETCH"; // Make sectionFrame stretch to parent width
+      sectionFrame.counterAxisSizingMode = "AUTO"; // Make frame hug its content
       parentFrame.appendChild(sectionFrame);
 
       const sectionTitle = figma.createText();
@@ -210,7 +210,7 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
       itemsGridFrame.layoutMode = "HORIZONTAL"; // Use HORIZONTAL for a wrapping grid-like layout
       itemsGridFrame.itemSpacing = ITEM_SPACING;
       itemsGridFrame.primaryAxisSizingMode = "AUTO"; // Let it grow with content
-      itemsGridFrame.layoutAlign = "STRETCH"; // Make itemsGridFrame stretch to sectionFrame width
+      itemsGridFrame.counterAxisSizingMode = "AUTO"; // Make it hug content width
       itemsGridFrame.layoutWrap = "WRAP"; // Enable wrapping
       itemsGridFrame.counterAxisAlignItems = 'MIN';
       sectionFrame.appendChild(itemsGridFrame);
@@ -221,6 +221,7 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
         itemFrame.layoutMode = "VERTICAL";
         itemFrame.itemSpacing = ITEM_SPACING / 2;
         itemFrame.primaryAxisSizingMode = "AUTO";
+        itemFrame.counterAxisSizingMode = "AUTO"; // Make item frame hug content
         itemsGridFrame.appendChild(itemFrame);
 
         if (variable.type === "COLOR" && variable.value && variable.value.rgb) {
@@ -236,14 +237,12 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
           nameText.fontName = { family: "Inter", style: "Regular" };
           nameText.fontSize = 12;
           nameText.characters = variable.name;
-          nameText.layoutAlign = "STRETCH";
           itemFrame.appendChild(nameText);
 
           const hexText = figma.createText();
           hexText.fontName = { family: "Inter", style: "Regular" };
           hexText.fontSize = 10;
           hexText.characters = variable.value.hex || "";
-          hexText.layoutAlign = "STRETCH";
           itemFrame.appendChild(hexText);
         } else {
           // Handle other types (FLOAT, STRING, BOOLEAN)
@@ -251,14 +250,12 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
           nameText.fontName = { family: "Inter", style: "Regular" };
           nameText.fontSize = 12;
           nameText.characters = variable.name;
-          nameText.layoutAlign = "STRETCH";
           itemFrame.appendChild(nameText);
 
           const valueText = figma.createText();
           valueText.fontName = { family: "Inter", style: "Regular" };
           valueText.fontSize = 10;
           valueText.characters = String(variable.value);
-          valueText.layoutAlign = "STRETCH";
           itemFrame.appendChild(valueText);
         }
       }
