@@ -181,13 +181,6 @@ Files are automatically named with mode information:
 - Try refreshing the plugin
 - Check browser console for any error messages
 
-## 🔮 What's Coming Next
-
-- [ ] Figma Community publication
-- [ ] Support for more export formats (SCSS, CSS Modules)
-- [ ] Batch export from multiple files
-- [ ] Integration with popular design token tools
-
 ## 📄 License
 
 MIT License - Feel free to use in personal and commercial projects.
