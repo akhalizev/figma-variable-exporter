@@ -205,6 +205,10 @@
           <input type="checkbox" id="organized-format" checked>
           <label for="organized-format">Organized format (group by type)</label>
         </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="json-preserve-aliases">
+          <label for="json-preserve-aliases">Preserve aliases (show variable references)</label>
+        </div>
         <div class="input-group">
           <label for="json-indent">Indentation:</label>
           <input type="number" id="json-indent" value="2" min="0" max="8">
@@ -232,6 +236,10 @@
           <input type="checkbox" id="css-remove-duplicates" checked>
           <label for="css-remove-duplicates">Remove duplicate words (e.g., accordion-accordion → accordion)</label>
         </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="css-preserve-aliases">
+          <label for="css-preserve-aliases">Preserve aliases (use var() references)</label>
+        </div>
       </div>
       <button id="export-css">Export CSS</button>
     </div>
@@ -250,6 +258,7 @@
     // Event listeners for export buttons
     document.getElementById('export-json').addEventListener('click', () => {
       const organized = document.getElementById('organized-format').checked;
+      const preserveAliases = document.getElementById('json-preserve-aliases').checked;
       const indent = parseInt(document.getElementById('json-indent').value);
       const selectedMode = document.getElementById('mode-select').value;
       
@@ -257,6 +266,7 @@
         pluginMessage: {
           type: 'export-json',
           organized: organized,
+          preserveAliases: preserveAliases,
           indent: indent,
           mode: selectedMode
         }
@@ -268,6 +278,7 @@
       const prefix = document.getElementById('css-prefix').value;
       const groupByCollection = document.getElementById('css-group-collections').checked;
       const removeDuplicateWords = document.getElementById('css-remove-duplicates').checked;
+      const preserveAliases = document.getElementById('css-preserve-aliases').checked;
       const selectedMode = document.getElementById('mode-select').value;
       
       parent.postMessage({
@@ -278,6 +289,7 @@
             prefix: prefix,
             groupByCollection: groupByCollection,
             removeDuplicateWords: removeDuplicateWords,
+            preserveAliases: preserveAliases,
             mode: selectedMode
           }
         }
