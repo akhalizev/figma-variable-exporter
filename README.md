@@ -10,6 +10,7 @@ This powerful Figma plugin streamlines your design-to-development workflow by ex
 ## ✨ What This Plugin Does
 
 Turn your carefully crafted Figma variables into:
+
 - **CSS Custom Properties** ready for your stylesheets
 - **JSON data** for your design tokens
 - **Visual Style Guides** generated directly in Figma
@@ -18,13 +19,16 @@ Turn your carefully crafted Figma variables into:
 ## 🚀 Key Features
 
 ### 🎯 **Smart Export Options**
+
 - **All Variable Types**: Colors, typography scales, spacing values, and more
 - **Multi-Mode Support**: Export Light mode, Dark mode, or all modes at once
 - **Clean Variable Names**: Automatically removes duplicate words (`accordion-accordion` → `accordion`)
 - **Custom Prefixes**: Add your own prefixes like `--ds-` or `--brand-`
 
 ### 🎨 **CSS Custom Properties**
+
 Perfect for modern web development:
+
 ```css
 :root {
   /* Colors */
@@ -44,7 +48,9 @@ Perfect for modern web development:
 ```
 
 ### 📊 **Organized JSON Export**
+
 Get structured data for your design system:
+
 ```json
 {
   "metadata": {
@@ -60,7 +66,9 @@ Get structured data for your design system:
 ```
 
 ### 🖼️ **Visual Style Guide Generator**
+
 Create professional style guide frames in Figma showing:
+
 - Color swatches with hex values
 - Organized layout with up to 20 variables per row
 - Proper spacing and typography
@@ -68,31 +76,35 @@ Create professional style guide frames in Figma showing:
 
 ## 📋 How to Use
 
-### Step 1: Install & Open
-1. Install the plugin from Figma Community (coming soon) or load it as a development plugin
-2. Open any Figma file with variables
-3. Run **Plugins → Variable Exporter**
+### Step 1: Open
+
+1.Run **Plugins → Variable Exporter**
 
 ### Step 2: Choose Your Export
+
 The plugin automatically detects all your variable modes:
 
 **For CSS Export:**
+
 - Choose specific mode (Dark, Light, etc.) or "All modes"
 - Toggle variable prefix on/off
 - Enable/disable grouping by type
 - Export generates clean CSS custom properties
 
 **For JSON Export:**
+
 - Select organized format or flat structure
 - Choose indentation level
 - Pick specific mode or export all modes
 
 **For Style Guide:**
-- Click "Create Style Guide" 
+
+- Click "Create Style Guide"
 - Generates a visual frame with all your variables
 - Colors show as swatches, other variables as labeled items
 
 ### Step 3: Integrate Into Your Project
+
 - **CSS files** are ready to import into your stylesheets
 - **JSON files** work with design token tools and build processes
 - **Style guides** help communicate design decisions to your team
@@ -100,7 +112,9 @@ The plugin automatically detects all your variable modes:
 ## 🎨 Real-World Examples
 
 ### Design System Teams
+
 Export your complete design system with all modes:
+
 ```bash
 MyDesignSystem_variables_all_modes.css
 MyDesignSystem_variables_Dark.json
@@ -108,7 +122,9 @@ MyDesignSystem_variables_Light.json
 ```
 
 ### Developers
+
 Get clean, prefixed CSS variables:
+
 ```css
 --ds-color-primary: #007AFF;
 --ds-color-secondary: #5856D6;
@@ -117,7 +133,9 @@ Get clean, prefixed CSS variables:
 ```
 
 ### Design Documentation
+
 Create visual style guides showing:
+
 - All color variables with hex codes
 - Spacing values organized in rows
 - Typography scales and other design tokens
@@ -135,13 +153,17 @@ Create visual style guides showing:
 ## 🌟 Advanced Features
 
 ### Variable Alias Resolution
+
 The plugin automatically resolves variable references:
+
 - If Color A references Color B, you get the actual color value
 - No more `[object Object]` in your exports
 - Works with nested references (A → B → C → actual value)
 
 ### Multi-Mode CSS Generation
+
 When exporting all modes, get CSS ready for theme switching:
+
 ```css
 /* Default/Light mode */
 :root {
@@ -155,7 +177,9 @@ When exporting all modes, get CSS ready for theme switching:
 ```
 
 ### Smart File Naming
+
 Files are automatically named with mode information:
+
 - `DesignSystem_variables.json` (default export)
 - `DesignSystem_variables_Dark.json` (Dark mode only)
 - `DesignSystem_variables_all_modes.css` (all modes)
@@ -171,13 +195,16 @@ Files are automatically named with mode information:
 ## 🚨 Troubleshooting
 
 **Plugin shows "No variables found"**
+
 - Make sure your Figma file contains local variables
 - Variables must be published to collections
 
 **Color shows as [object Object]**
+
 - This is fixed in the latest version! Variable aliases are now properly resolved
 
 **Export button not working**
+
 - Try refreshing the plugin
 - Check browser console for any error messages
 
