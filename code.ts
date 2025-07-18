@@ -5,15 +5,19 @@
 interface VariableExportData {
   name: string;
   type: string;
-  value: any; // Flexible to handle different variable value types
+  value: FormattedColorValue | string | number | boolean | null;
   hexValue?: string; // Optional hex value for colors
   variableId: string; // Variable ID for reference
   mode?: string; // Mode name for this value
+  alias?: {
+    name: string;
+    variableId: string;
+  }; // Optional alias information
 }
 
-// Define interface for color value
-interface ColorValue {
-  rgb: { r: number; g: number; b: number; a?: number };
+// Define interface for formatted color value
+interface FormattedColorValue {
+  rgb: RGB | RGBA;
   hex: string;
 }
 
@@ -54,6 +58,7 @@ interface CssExportOptions {
   groupByCollection: boolean;
   removeDuplicateWords: boolean;
   mode?: string;
+  preserveAliases: boolean;
 }
 
 /**
@@ -80,70 +85,80 @@ function rgbToHex(r: number, g: number, b: number, a?: number): string {
 /**
  * Resolves a variable value, handling variable aliases/references
  */
-async function resolveVariableValue(value: any, type: string): Promise<any> {
-  if (!value) return null;
+async function resolveVariableValue(value: VariableValue, type: string, preserveAlias: boolean = false): Promise<{ resolvedValue: FormattedColorValue | string | number | boolean | null; alias?: { name: string; variableId: string } }> {
+  if (!value) return { resolvedValue: null };
   
   // Check if this is a variable alias (reference to another variable)
-  if (typeof value === 'object' && value.type === 'VARIABLE_ALIAS') {
+  if (typeof value === 'object' && 'type' in value && value.type === 'VARIABLE_ALIAS') {
     try {
-      // Resolve the referenced variable
+      // Get the referenced variable
       const referencedVariable = await figma.variables.getVariableByIdAsync(value.id);
       if (referencedVariable) {
-        // Get the value from the referenced variable (use first mode)
+        // If we want to preserve the alias, return the alias info
+        if (preserveAlias) {
+          return {
+            resolvedValue: null, // We'll use the alias instead
+            alias: {
+              name: referencedVariable.name,
+              variableId: referencedVariable.id
+            }
+          };
+        }
+        
+        // Otherwise, resolve the referenced variable (existing behavior)
         const referencedValue = referencedVariable.valuesByMode[Object.keys(referencedVariable.valuesByMode)[0]];
         // Recursively resolve in case the referenced variable also references another variable
-        return await resolveVariableValue(referencedValue, referencedVariable.resolvedType);
+        const result = await resolveVariableValue(referencedValue as VariableValue, referencedVariable.resolvedType, preserveAlias);
+        return result;
       } else {
         console.warn(`Could not resolve variable reference with ID: ${value.id}`);
-        return null;
+        return { resolvedValue: null };
       }
     } catch (error) {
       console.error('Error resolving variable alias:', error);
-      return null;
+      return { resolvedValue: null };
     }
   }
   
   // Format the resolved value based on its type
-  return formatVariableValue(value, type);
+  return { resolvedValue: formatVariableValue(value, type) };
 }
 
 /**
  * Formats a variable value based on its type for better visualization
  */
-function formatVariableValue(value: any, type: string): any {
+function formatVariableValue(value: VariableValue, type: string): FormattedColorValue | string | number | boolean | null {
   if (!value) return null;
   
   switch(type) {
     case 'COLOR':
       if (typeof value === 'object' && 'r' in value && 'g' in value && 'b' in value) {
+        const colorValue = value as RGB | RGBA;
         return {
-          rgb: { 
-            r: value.r, 
-            g: value.g, 
-            b: value.b,
-            ...(value.a !== undefined ? { a: value.a } : {})
-          },
-          hex: rgbToHex(value.r, value.g, value.b, value.a)
+          rgb: colorValue,
+          hex: rgbToHex(colorValue.r, colorValue.g, colorValue.b, 'a' in colorValue ? colorValue.a : undefined)
         };
       }
       // If it's still an object but not an RGB object, log it for debugging
       if (typeof value === 'object') {
         console.warn('Unexpected color value format:', value);
       }
-      return value;
+      return null;
       
     case 'FLOAT':
+      return typeof value === 'number' ? value : null;
     case 'STRING':
+      return typeof value === 'string' ? value : null;
     case 'BOOLEAN':
-      return value;
+      return typeof value === 'boolean' ? value : null;
       
     // Format other types as needed
     default:
-      return value;
+      return typeof value === 'string' ? value : null;
   }
 }
 
-async function getVariables(): Promise<OrganizedExport> {
+async function getVariables(preserveAliases: boolean = false): Promise<OrganizedExport> {
   const variables: Variable[] = await figma.variables.getLocalVariablesAsync();
   const count: number = variables.length;
   
@@ -195,16 +210,21 @@ async function getVariables(): Promise<OrganizedExport> {
       const modeName = modeIdToName.get(modeId) || 'Unknown Mode';
       
       // Resolve the value, handling variable aliases
-      const formattedValue = await resolveVariableValue(value, type);
+      const resolvedResult = await resolveVariableValue(value, type, preserveAliases);
       
       // Create variable data object
       const variableData: VariableExportData = {
         name: v.name,
         type: type,
-        value: formattedValue,
+        value: resolvedResult.resolvedValue,
         variableId: v.id,
         mode: modeName
       };
+      
+      // Add alias information if present
+      if (resolvedResult.alias) {
+        variableData.alias = resolvedResult.alias;
+      }
       
       // Add to mode-specific organization
       if (!variablesByMode[modeName][type]) {
@@ -279,7 +299,8 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
     const ITEM_SPACING = 20;
     const SECTION_SPACING = 60;
     const COLOR_SWATCH_SIZE = 80;
-    const TEXT_NODE_HEIGHT = 20;
+    // Remove unused TEXT_NODE_HEIGHT
+    // const TEXT_NODE_HEIGHT = 20;
 
     const parentFrame = figma.createFrame();
     parentFrame.name = "Variable Style Guide - " + exportData.metadata.fileName;
@@ -351,12 +372,14 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
           itemFrame.counterAxisSizingMode = "AUTO"; // Make item frame hug content
           rowFrame.appendChild(itemFrame);
 
-          if (variable.type === "COLOR" && variable.value && variable.value.rgb) {
+          if (variable.type === "COLOR" && variable.value && typeof variable.value === 'object' && variable.value !== null && 'rgb' in variable.value) {
+            const colorValue = variable.value as FormattedColorValue;
             const colorSwatch = figma.createRectangle();
             colorSwatch.name = "Color Swatch";
             colorSwatch.resize(COLOR_SWATCH_SIZE, COLOR_SWATCH_SIZE);
-            const { r, g, b, a } = variable.value.rgb;
-            colorSwatch.fills = [{ type: "SOLID", color: { r, g, b }, opacity: a !== undefined ? a : 1 }];
+            const { r, g, b } = colorValue.rgb;
+            const a = 'a' in colorValue.rgb ? colorValue.rgb.a : 1;
+            colorSwatch.fills = [{ type: "SOLID", color: { r, g, b }, opacity: a }];
             colorSwatch.cornerRadius = 4;
             itemFrame.appendChild(colorSwatch);
 
@@ -369,7 +392,7 @@ async function createStyleGuideFrame(exportData: OrganizedExport): Promise<void>
             const hexText = figma.createText();
             hexText.fontName = { family: "Inter", style: "Regular" };
             hexText.fontSize = 10;
-            hexText.characters = variable.value.hex || "";
+            hexText.characters = colorValue.hex || "";
             itemFrame.appendChild(hexText);
           } else {
             // Handle other types (FLOAT, STRING, BOOLEAN)
@@ -428,7 +451,7 @@ function generateCssVariables(data: OrganizedExport, options: CssExportOptions):
           
           typeData.variables.forEach((variable: VariableExportData) => {
             const variableName = cleanVariableName(variable.name, prefix, options.removeDuplicateWords);
-            const value = formatCssValue(variable.value, variable.type);
+            const value = formatCssValue(variable.value, variable.type, variable.alias, prefix, options.removeDuplicateWords);
             css += `  --${variableName}: ${value};\n`;
           });
           
@@ -439,7 +462,7 @@ function generateCssVariables(data: OrganizedExport, options: CssExportOptions):
           const typeData = modeData[typeName];
           typeData.variables.forEach((variable: VariableExportData) => {
             const variableName = cleanVariableName(variable.name, prefix, options.removeDuplicateWords);
-            const value = formatCssValue(variable.value, variable.type);
+            const value = formatCssValue(variable.value, variable.type, variable.alias, prefix, options.removeDuplicateWords);
             css += `  --${variableName}: ${value};\n`;
           });
         }
@@ -465,7 +488,7 @@ function generateCssVariables(data: OrganizedExport, options: CssExportOptions):
       
       typeData.variables.forEach((variable: VariableExportData) => {
         const variableName = cleanVariableName(variable.name, prefix, options.removeDuplicateWords);
-        const value = formatCssValue(variable.value, variable.type);
+        const value = formatCssValue(variable.value, variable.type, variable.alias, prefix, options.removeDuplicateWords);
         css += `  --${variableName}: ${value};\n`;
       });
       
@@ -477,7 +500,7 @@ function generateCssVariables(data: OrganizedExport, options: CssExportOptions):
       const typeData = dataToUse[typeName];
       typeData.variables.forEach((variable: VariableExportData) => {
         const variableName = cleanVariableName(variable.name, prefix, options.removeDuplicateWords);
-        const value = formatCssValue(variable.value, variable.type);
+        const value = formatCssValue(variable.value, variable.type, variable.alias, prefix, options.removeDuplicateWords);
         css += `  --${variableName}: ${value};\n`;
       });
     }
@@ -487,15 +510,23 @@ function generateCssVariables(data: OrganizedExport, options: CssExportOptions):
   return css;
 }
 
-function formatCssValue(value: any, type: string): string {
+function formatCssValue(value: FormattedColorValue | string | number | boolean | null, type: string, alias?: { name: string; variableId: string }, prefix: string = '', removeDuplicateWords: boolean = true): string {
+  // If this is an alias and we want to preserve it, use CSS custom property reference
+  if (alias) {
+    const aliasVariableName = cleanVariableName(alias.name, prefix, removeDuplicateWords);
+    return `var(--${aliasVariableName})`;
+  }
+  
+  if (value === null) return '';
+  
   switch (type) {
     case 'COLOR':
-      if (typeof value === 'object' && value.hex) {
+      if (typeof value === 'object' && value !== null && 'hex' in value) {
         return value.hex;
       }
-      return value;
+      return String(value);
     case 'FLOAT':
-      return `${value}`;
+      return String(value);
     case 'STRING':
       return `"${value}"`;
     case 'BOOLEAN':
@@ -545,15 +576,15 @@ function cleanVariableName(name: string, prefix: string, removeDuplicates: boole
 
 // Show the UI and run the plugin
 figma.showUI(__html__, { width: 450, height: 640 });
-getVariables();
+getVariables(false); // Initially load without preserving aliases
 
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
   if (msg.type === 'get-variables') {
-    const variables = await getVariables();
+    const variables = await getVariables(msg.preserveAliases || false);
     figma.ui.postMessage({ type: 'variables-data', data: variables });
   } else if (msg.type === 'export-json') {
-    const variables = await getVariables();
+    const variables = await getVariables(msg.preserveAliases || false);
     let dataToExport;
     let filename = `${figma.root.name.replace(/[^a-zA-Z0-9]/g, '_')}_variables`;
     
@@ -582,7 +613,7 @@ figma.ui.onmessage = async (msg) => {
       mimeType: 'application/json'
     });
   } else if (msg.type === 'export-css') {
-    const variables = await getVariables();
+    const variables = await getVariables(msg.options.preserveAliases || false);
     const cssContent = generateCssVariables(variables, msg.options);
     let filename = `${figma.root.name.replace(/[^a-zA-Z0-9]/g, '_')}_variables`;
     
