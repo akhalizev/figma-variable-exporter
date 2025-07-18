@@ -78,7 +78,7 @@ Create professional style guide frames in Figma showing:
 
 ### Step 1: Open
 
-1.Run **Plugins → Variable Exporter**
+1. Run **Plugins → Variable Exporter**
 
 ### Step 2: Choose Your Export
 
